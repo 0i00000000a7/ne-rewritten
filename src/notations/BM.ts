@@ -24,17 +24,112 @@ export function compare(a: Expr, b: Expr): number {
     return lex_compare(a, b, (ca, cb) => lex_compare(ca, cb, number_compare))
 }
 
-/** 矩阵显示为字符串。 */
+/** 矩阵显示为字符串。空列显示为 (0)。 */
 export function display(a: Expr): string {
     if (is_infinite(a)) return 'Limit'
     return a
-        .map(col => '(' + col.map(entry => '' + entry).join(',') + ')')
+        .map(col =>
+            '(' + (col.length > 0 ? col.map(e => '' + e).join(',') : '0') + ')',
+        )
         .join('')
+}
+
+/**
+ * 解析 display 的输出，恢复为矩阵。
+ * 采用递归向下风格，内部 parse_column / parse_expression 返回 [result, end]。
+ */
+export function from_display(s: string): Expr {
+    if (s === 'Limit') return [[Infinity]]
+    s = s.trim()
+    if (s === '') return []
+
+    function error(): never {
+        throw new Error(`Illegal input string: ${s}`)
+    }
+
+    function skip_spaces(i: number): number {
+        while (i < s.length && s[i] === ' ') i++
+        return i
+    }
+
+    function parse_column(start: number): [number[], number] {
+        if (s[start] !== '(') error()
+        let i = skip_spaces(start + 1)
+
+        // 空列 ()
+        if (i < s.length && s[i] === ')') return [[], i + 1]
+
+        const col: number[] = []
+        while (i < s.length) {
+            i = skip_spaces(i)
+            // 读取数字（非负整数）
+            if (i < s.length && s[i] >= '0' && s[i] <= '9') {
+                let num = 0
+                while (i < s.length && s[i] >= '0' && s[i] <= '9') {
+                    num = num * 10 + (s.charCodeAt(i) - 48)
+                    i++
+                }
+                col.push(num)
+                i = skip_spaces(i)
+                if (i < s.length && s[i] === ',') {
+                    i++
+                } else if (i < s.length && s[i] === ')') {
+                    i++
+                    break
+                } else {
+                    error()
+                }
+            } else {
+                error()
+            }
+        }
+        return [col, i]
+    }
+
+    function parse_expression(start: number): [Expr, number] {
+        const result: Expr = []
+        let i = start
+        while (i < s.length) {
+            i = skip_spaces(i)
+            if (i >= s.length || s[i] !== '(') break
+            const [col, end] = parse_column(i)
+            result.push(col)
+            i = end
+        }
+        return [result, i]
+    }
+
+    const [result, end] = parse_expression(0)
+    if (end !== s.length) error()
+    return normalize(result)
 }
 
 /** 判断矩阵是否为极限（无限或最后一列首行非零）。 */
 export function matrix_is_limit(a: Expr): boolean {
     return is_infinite(a) || (a.length > 0 && a[a.length - 1][0] > 0)
+}
+
+// ---------------------------------------------------------------------------
+// 标准化：去掉每列末尾的 0
+// ---------------------------------------------------------------------------
+
+/** 返回每列末尾不含 0 的标准形式。 */
+function normalize(m: Expr): Expr {
+    return m.map(col => {
+        let end = col.length
+        while (end > 0 && col[end - 1] === 0) end--
+        return col.slice(0, end)
+    })
+}
+
+/** 将各列补齐到相同高度（尾部补 0），供内部算法使用。 */
+function uniform(m: Expr): Expr {
+    const maxLen = m.reduce((max, col) => Math.max(max, col.length), 0)
+    return m.map(col =>
+        col.length === maxLen
+            ? col
+            : [...col, ...Array<number>(maxLen - col.length).fill(0)],
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -90,9 +185,10 @@ function ascending_threshold(
     return result
 }
 
-/** BM4 展开算法。 */
+/** BM4 展开算法。展开结果自动标准化。 */
 function expand(m: Expr, index: number): Expr {
     if (m.length === 0) return m
+    m = uniform(m)
 
     const rightmost = m.length - 1
     const col_last = m[rightmost]
@@ -103,7 +199,7 @@ function expand(m: Expr, index: number): Expr {
     }
 
     let result = m.slice(0, rightmost)
-    if (topmost < 0) return result
+    if (topmost < 0) return normalize(result)
 
     const P = parents(m)
     const r = P[rightmost][topmost]
@@ -128,14 +224,14 @@ function expand(m: Expr, index: number): Expr {
     ) {
         result = result.map(column => column.slice(0, height))
     }
-    return result
+    return normalize(result)
 }
 
 /**
  * 将 Bashicu 矩阵转换为 0-Y 数列。
  * 用于显示等价表示。
  */
-function convert_to_0Y(m: Expr): number[] {
+function convert_to_0_y(m: Expr): number[] {
     const P = parents(m)
     const mountain: number[][] = []
     for (let i = 0; i < m.length; i++) {
@@ -150,7 +246,7 @@ function convert_to_0Y(m: Expr): number[] {
 }
 
 // ---------------------------------------------------------------------------
-// 节记定义（导出给注册器使用）
+// 记号定义（导出给注册器使用）
 // ---------------------------------------------------------------------------
 
 /** 基础数列展开缓存。 */
@@ -159,18 +255,19 @@ const data: Record<string, Expr[]> = {}
 export const BM4: NotationDefinition<Expr> = {
     id: 'bm4',
     name: 'Bashicu matrix',
-    display: display,
+    display,
+    from_display,
     display_equiv: m =>
-        is_infinite(m) ? '1,ω' : '' + convert_to_0Y(m),
+        is_infinite(m) ? '1,ω' : '' + convert_to_0_y(m),
     is_limit: matrix_is_limit,
-    compare: compare,
+    compare,
 
     FS: (m, index) => {
         if (is_infinite(m))
-            return [
+            return normalize([
                 Array(index + 1).fill(0),
                 Array(index + 1).fill(1),
-            ]
+            ])
         if (m.length === 0) return []
 
         const datakey = display(m)
@@ -182,7 +279,7 @@ export const BM4: NotationDefinition<Expr> = {
     },
 
     init: () => [
-        {expr: [[Infinity]], low: []},
-        {expr: [], low: []},
+        [[Infinity]],
+        [],
     ],
 }

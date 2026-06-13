@@ -1,0 +1,101 @@
+import type {TreeNode} from './tree'
+import type {TreeNodeExtra} from './extra'
+import type {NotationDefinition} from '../utils'
+import {expand_item} from './expander'
+import {last_descendant, find_prev} from './tree'
+
+// ---------------------------------------------------------------------------
+// 中间数据结构
+// ---------------------------------------------------------------------------
+
+/** 单个导出条目。expr 保留原始类型，不做字符串化。 */
+export interface AnalysisEntry<T> {
+    expr: T
+    analysis: string[]
+}
+
+// ---------------------------------------------------------------------------
+// 导出（递增序）
+// ---------------------------------------------------------------------------
+
+/**
+ * 先根遍历树（递增序），收集所有有 analysis 内容的节点。
+ */
+export function export_analysis<T>(
+    root: TreeNode<T>,
+): AnalysisEntry<T>[] {
+    const result: AnalysisEntry<T>[] = []
+
+    function walk(nodes: TreeNode<T>[]) {
+        // 逆序遍历 children（递增序：小 → 大）
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i]
+            const ed = node.extraData as TreeNodeExtra | undefined
+            if (ed?.analysis?.some(a => a !== undefined)) {
+                result.push({
+                    expr: node.expr,
+                    analysis: [...ed.analysis],
+                })
+            }
+            walk(node.children)
+        }
+    }
+
+    walk(root.children)
+    return result
+}
+
+// ---------------------------------------------------------------------------
+// 导入（返回匹配到的节点）
+// ---------------------------------------------------------------------------
+
+/**
+ * 从 AnalysisEntry[] 导入分析。
+ *
+ * 树尚未展开时，遍历 entries 并在树中定位（必要时展开），
+ * 找到匹配节点后写入 analysis。
+ *
+ * @returns 按 entries 顺序匹配到的节点列表。
+ */
+export function import_analysis<T>(
+    root: TreeNode<T>,
+    entries: AnalysisEntry<T>[],
+    notation: NotationDefinition<T>,
+    variant: string,
+): TreeNode<T>[] {
+    const matched: TreeNode<T>[] = []
+    let node = last_descendant(root)
+    let index = 0
+
+    while (index < entries.length) {
+        const cmp = notation.compare(node.expr, entries[index].expr)
+
+        if (cmp === 0) {
+            // 匹配 → 写入 analysis
+            const ed = (node.extraData ??= {}) as TreeNodeExtra
+            if (!Array.isArray(ed.analysis)) ed.analysis = []
+            ed.analysis.length = 0
+            ed.analysis.push(...entries[index].analysis)
+            matched.push(node)
+            index++
+        } else if (cmp > 0) {
+            // 当前节点偏大 → 展开，然后移向新创建的子节点
+            const created = expand_item(node, notation, variant)
+            if (!created) {
+                index++
+                continue
+            }
+            node = created
+        } else {
+            // 当前节点偏小 → 先根遍历逆序前移
+            const prev = find_prev(node, 0)
+            if (!prev) {
+                index++
+                continue
+            }
+            node = prev
+        }
+    }
+
+    return matched
+}

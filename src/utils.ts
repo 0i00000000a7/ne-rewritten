@@ -21,18 +21,16 @@ export function lex_compare<T>(
 // 通用节记定义类型（Expr 类型由各 notation 自行定义）
 // ---------------------------------------------------------------------------
 
-export interface NotationItem<T> {
-    expr: T;
-    low: T;
-}
-
 export interface NotationDefinition<T> {
     id: string;
     name: string;
     display: (a: T) => string;
-    display_equiv: (a: T) => string;
+    display_equiv?: (a: T) => string;
+    from_display?: (str: string) => T;
     is_limit: (a: T) => boolean;
     compare: (a: T, b: T) => number;
     FS: (a: T, index: number) => T;
-    init: () => NotationItem<T>[];
+    FS_alter?: (a: T, index: number) => T;
+    FS_short?: (a: T, index: number) => T;
+    init: () => T[];
 }

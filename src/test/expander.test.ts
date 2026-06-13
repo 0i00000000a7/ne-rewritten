@@ -1,7 +1,7 @@
-import {describe, expect, it} from 'vitest'
-import {expand_item} from '../core/expander'
-import {init_dataset} from '../core/tree'
-import type {NotationDefinition} from '../utils'
+import { describe, expect, it } from 'vitest'
+import { expand_item } from '../core/expander'
+import { init_dataset } from '../core/tree'
+import type { NotationDefinition } from '../utils'
 
 // ===========================================================================
 // 数值节记
@@ -44,7 +44,7 @@ describe('expand_item', () => {
         expand_item(n15, notation, 'FS')
         expect(n15.children.length).toBe(1)
         expect(n15.children[0].expr).toBe(5)
-        expect(n15.fs_state).toEqual({variant: 'FS', index: 0})
+        expect(n15.fs_state).toEqual({ variant: 'FS', index: 0 })
     })
 
     it('第二次展开：bound=5 → FS(15,1) = 8', () => {
@@ -182,7 +182,7 @@ describe('omega', () => {
         expand_item(w, omega_notation, 'FS')
         expect(w.children.length).toBe(1)
         expect(w.children[0].expr).toBe(1)
-        expect(w.fs_state).toEqual({variant: 'FS', index: 1})
+        expect(w.fs_state).toEqual({ variant: 'FS', index: 1 })
     })
 
     it('FS 连续展开 ω 得 [5, 4, 3, 2, 1]', () => {
@@ -201,7 +201,7 @@ describe('omega', () => {
         expand_item(w, omega_notation, 'FS_alter')
         expect(w.children.length).toBe(1)
         expect(w.children[0].expr).toBe(2)
-        expect(w.fs_state).toEqual({variant: 'FS_alter', index: 1})
+        expect(w.fs_state).toEqual({ variant: 'FS_alter', index: 1 })
     })
 
     it('FS_alter 连续展开得 [10, 8, 6, 4, 2]', () => {

@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
     TreeNode,
     init_dataset,
@@ -11,7 +11,7 @@ import {
     get_bound,
     type FsState,
 } from '../core/tree'
-import type {NotationDefinition} from '../utils'
+import type { NotationDefinition } from '../utils'
 
 // ---------------------------------------------------------------------------
 // 辅助：构造一棵标准测试树
@@ -28,22 +28,22 @@ import type {NotationDefinition} from '../utils'
 // ---------------------------------------------------------------------------
 
 function build_test_tree(): TreeNode<string> {
-    const c: TreeNode<string> = {expr: 'C', children: [], parent: null!, index: 0}
-    const d: TreeNode<string> = {expr: 'D', children: [], parent: null!, index: 1}
-    const b: TreeNode<string> = {expr: 'B', children: [c, d], parent: null!, index: 0}
+    const c: TreeNode<string> = { expr: 'C', children: [], parent: null!, index: 0 }
+    const d: TreeNode<string> = { expr: 'D', children: [], parent: null!, index: 1 }
+    const b: TreeNode<string> = { expr: 'B', children: [c, d], parent: null!, index: 0 }
     c.parent = b
     d.parent = b
 
-    const f: TreeNode<string> = {expr: 'F', children: [], parent: null!, index: 0}
-    const e: TreeNode<string> = {expr: 'E', children: [f], parent: null!, index: 1}
+    const f: TreeNode<string> = { expr: 'F', children: [], parent: null!, index: 0 }
+    const e: TreeNode<string> = { expr: 'E', children: [f], parent: null!, index: 1 }
     f.parent = e
 
-    const a: TreeNode<string> = {expr: 'A', children: [b, e], parent: null!, index: 0}
+    const a: TreeNode<string> = { expr: 'A', children: [b, e], parent: null!, index: 0 }
     b.parent = a
     e.parent = a
 
-    const h: TreeNode<string> = {expr: 'H', children: [], parent: null!, index: 0}
-    const g: TreeNode<string> = {expr: 'G', children: [h], parent: null!, index: 1}
+    const h: TreeNode<string> = { expr: 'H', children: [], parent: null!, index: 0 }
+    const g: TreeNode<string> = { expr: 'G', children: [h], parent: null!, index: 1 }
     h.parent = g
 
     const root: TreeNode<string> = {
@@ -93,9 +93,9 @@ describe('prepend_child', () => {
         // 已有子节点 A(0)，B(1)，C(2)
         const parent: TreeNode<string> = {
             expr: 'P', children: [
-                {expr: 'A', children: [], parent: null!, index: 0},
-                {expr: 'B', children: [], parent: null!, index: 1},
-                {expr: 'C', children: [], parent: null!, index: 2},
+                { expr: 'A', children: [], parent: null!, index: 0 },
+                { expr: 'B', children: [], parent: null!, index: 1 },
+                { expr: 'C', children: [], parent: null!, index: 2 },
             ], parent: null, index: -1,
         }
         parent.children.forEach(c => c.parent = parent)
@@ -137,9 +137,9 @@ describe('append_sibling', () => {
         // 模拟展开 3 次得到 A[-2, -1, 0]（即 A3, A2, A1）
         const parent: TreeNode<string> = {
             expr: 'P', children: [
-                {expr: 'A3', children: [], parent: null!, index: -2},
-                {expr: 'A2', children: [], parent: null!, index: -1},
-                {expr: 'A1', children: [], parent: null!, index: 0},
+                { expr: 'A3', children: [], parent: null!, index: -2 },
+                { expr: 'A2', children: [], parent: null!, index: -1 },
+                { expr: 'A1', children: [], parent: null!, index: 0 },
             ], parent: null, index: -1,
         }
         parent.children.forEach(c => c.parent = parent)
@@ -159,7 +159,7 @@ describe('append_sibling', () => {
     it('追加多次得到递增正 index', () => {
         const parent: TreeNode<string> = {
             expr: 'P', children: [
-                {expr: 'A', children: [], parent: null!, index: 0},
+                { expr: 'A', children: [], parent: null!, index: 0 },
             ], parent: null, index: -1,
         }
         parent.children[0].parent = parent
@@ -186,7 +186,7 @@ describe('last_descendant', () => {
     })
 
     it('叶子节点返回自身', () => {
-        const leaf: TreeNode<string> = {expr: 'X', children: [], parent: null, index: 0}
+        const leaf: TreeNode<string> = { expr: 'X', children: [], parent: null, index: 0 }
         expect(last_descendant(leaf).expr).toBe('X')
     })
 })

@@ -1,5 +1,5 @@
-import type {TreeNode} from '../core/tree'
-import type {TreeNodeExtra} from '../core/extra'
+import type { TreeNode } from '../core/tree'
+import type { TreeNodeExtra } from '../core/extra'
 
 /** 最后一次聚焦的节点 path */
 let last_path: string | undefined
@@ -16,7 +16,7 @@ export function get_last_focus(): string | undefined {
 function scroll_into_view(el: HTMLElement): void {
     const rect = el.getBoundingClientRect()
     const top = window.scrollY + rect.top - 60
-    window.scrollTo({top, behavior: 'smooth'})
+    window.scrollTo({ top, behavior: 'smooth' })
 }
 
 /** 通过 data-tree-path 查找并聚焦（阻止默认滚动，手动平滑滚动） */
@@ -25,7 +25,7 @@ export function focus_node(path: string): void {
         `[data-tree-path="${path}"]`,
     )
     if (!el) return
-    el.focus({preventScroll: true})
+    el.focus({ preventScroll: true })
     scroll_into_view(el)
 }
 
@@ -39,7 +39,7 @@ export function focus_node_input<T>(node: TreeNode<T>): void {
         `[data-tree-path="${path}"]`,
     )
     if (el) {
-        el.focus({preventScroll: true})
+        el.focus({ preventScroll: true })
         scroll_into_view(el)
         return
     }

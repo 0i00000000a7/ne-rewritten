@@ -206,7 +206,7 @@ function expand(m: Expr, index: number): Expr {
     const A = ascending_threshold(P, r, topmost)
     const col_r = m[r]
     const offset = Array.from(
-        {length: topmost},
+        { length: topmost },
         (_, j) => col_last[j] - col_r[j],
     )
 

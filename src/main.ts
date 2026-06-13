@@ -1,10 +1,10 @@
-import {createApp, ref, provide} from 'vue'
+import { createApp, ref, provide, Ref } from 'vue'
 import App from './App.vue'
-import {BM4} from './notations/BM'
-import {Omega} from './notations/Omega'
-import {register_notation} from './core/registry'
-import {DEFAULT_SETTINGS} from './core/settings'
-import {SETTINGS_KEY} from './composables/useSettings'
+import { BM4 } from './notations/BM'
+import { Omega } from './notations/Omega'
+import { register_notation } from './core/registry'
+import { DEFAULT_SETTINGS, Settings } from './core/settings'
+import { SETTINGS_KEY } from './composables/useSettings'
 
 register_notation(Omega)
 register_notation(BM4)
@@ -16,11 +16,11 @@ window.notations.BM4 = BM4
 
 const app = createApp(App)
 
-const settings = ref({...DEFAULT_SETTINGS})
+const settings: Ref<Settings> = ref({ ...DEFAULT_SETTINGS })
 
 app.provide(SETTINGS_KEY, {
     settings,
-    update(patch: Partial<typeof DEFAULT_SETTINGS>) {
+    update(patch: Partial<Settings>) {
         Object.assign(settings.value, patch)
     },
 })

@@ -1,11 +1,11 @@
 <script setup lang="ts" generic="T">
-import {ref, computed, onMounted} from 'vue'
-import type {TreeNode} from '../core/tree'
-import type {TreeNodeExtra} from '../core/extra'
-import type {NotationDefinition} from '../utils'
-import {expand_item} from '../core/expander'
-import {find_next, find_prev} from '../core/tree'
-import {focus_node, focus_node_input, set_last_focus} from '../composables/useFocusTracker'
+import { ref, computed, onMounted } from 'vue'
+import type { TreeNode } from '../core/tree'
+import type { TreeNodeExtra } from '../core/extra'
+import type { NotationDefinition } from '../utils'
+import { expand_item } from '../core/expander'
+import { find_next, find_prev } from '../core/tree'
+import { focus_node, focus_node_input, set_last_focus } from '../composables/useFocusTracker'
 
 const props = defineProps<{
     node: TreeNode<T>
@@ -17,29 +17,28 @@ const input_ref = ref<HTMLInputElement | null>(null)
 const tooltip = ref(false)
 const tooltipFS = ref<string[]>([])
 
-// extraData 初始化
 if (!props.node.extraData) props.node.extraData = {}
 const ed = props.node.extraData as TreeNodeExtra
 if (!Array.isArray(ed.analysis)) ed.analysis = []
 
-// analysis[0] 的读写桥接（数组始终存在，元素可为 undefined）
 const analysis0 = computed({
     get: () => ed.analysis![0] ?? '',
-    set: (v: string) => { ed.analysis![0] = v },
+    set: (v: string) => {
+        ed.analysis![0] = v
+    },
 })
 
 const node_path = props.node.path ?? '' + props.node.index
 
-// 设置 data-tree-path 并处理 focus_on_mounted
 onMounted(() => {
     input_ref.value?.setAttribute('data-tree-path', node_path)
     if (ed.focus_on_mounted) {
         const el = input_ref.value
         if (el) {
-            el.focus({preventScroll: true})
+            el.focus({ preventScroll: true })
             const rect = el.getBoundingClientRect()
             const top = window.scrollY + rect.top - 60
-            window.scrollTo({top, behavior: 'smooth'})
+            window.scrollTo({ top, behavior: 'smooth' })
         }
         ed.focus_on_mounted = false
     }
@@ -66,7 +65,7 @@ function on_leave() {
 }
 
 // ---------------------------------------------------------------------------
-// 展开
+// 展开 + 聚焦
 // ---------------------------------------------------------------------------
 
 function do_expand(tier?: number) {
@@ -78,37 +77,6 @@ function do_expand(tier?: number) {
 
 function on_expr_click() {
     do_expand()
-}
-
-// ---------------------------------------------------------------------------
-// 带 analysis 过滤的导航（Alt 键启用）
-// ---------------------------------------------------------------------------
-
-function has_analysis(node: TreeNode<unknown>): boolean {
-    const ed = node.extraData as TreeNodeExtra | undefined
-    return ed?.analysis?.[0] !== undefined
-}
-
-function find_prev_analysis(
-    node: TreeNode<T>,
-    skip: number,
-): TreeNode<T> | undefined {
-    let cur = find_prev(node, skip)
-    while (cur && !has_analysis(cur as unknown as TreeNode<unknown>)) {
-        cur = find_prev(cur, skip)
-    }
-    return cur
-}
-
-function find_next_analysis(
-    node: TreeNode<T>,
-    skip: number,
-): TreeNode<T> | undefined {
-    let cur = find_next(node, skip)
-    while (cur && !has_analysis(cur as unknown as TreeNode<unknown>)) {
-        cur = find_next(cur, skip)
-    }
-    return cur
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +125,31 @@ function on_keydown(e: KeyboardEvent) {
 }
 
 // ---------------------------------------------------------------------------
+// analysis 过滤导航
+// ---------------------------------------------------------------------------
+
+function has_analysis(node: TreeNode<unknown>): boolean {
+    const ed = node.extraData as TreeNodeExtra | undefined
+    return ed?.analysis?.[0] !== undefined
+}
+
+function find_prev_analysis(node: TreeNode<T>, skip: number): TreeNode<T> | undefined {
+    let cur = find_prev(node, skip)
+    while (cur && !has_analysis(cur as unknown as TreeNode<unknown>)) {
+        cur = find_prev(cur, skip)
+    }
+    return cur
+}
+
+function find_next_analysis(node: TreeNode<T>, skip: number): TreeNode<T> | undefined {
+    let cur = find_next(node, skip)
+    while (cur && !has_analysis(cur as unknown as TreeNode<unknown>)) {
+        cur = find_next(cur, skip)
+    }
+    return cur
+}
+
+// ---------------------------------------------------------------------------
 // 聚焦追踪
 // ---------------------------------------------------------------------------
 
@@ -166,21 +159,25 @@ function on_focus() {
 </script>
 
 <template>
-    <li>
+    <li class="tree-item">
         <div
             class="shown-item"
             :class="{ analyzed: has_analysis(node as unknown as TreeNode<unknown>) }"
+            @mousedown.prevent="on_expr_click"
             @mouseenter="on_enter"
             @mouseleave="on_leave"
         >
-            <input
-                type="checkbox"
-                @mousedown.stop
-                v-model="ed.hide_child"
-            />
+            <span
+                v-if="node.children.length > 0"
+                class="fold-icon"
+                @mousedown.stop="ed.hide_child = !ed.hide_child"
+            >{{ ed.hide_child ? '▶' : '▼' }}</span>
+            <span
+                v-else
+                class="fold-icon fold-icon--spacer"
+            ></span>
             <span
                 class="expr-display"
-                @mousedown.prevent="on_expr_click"
                 v-html="notation.display(node.expr)"
             />
             <input
@@ -192,11 +189,11 @@ function on_focus() {
                 @focus="on_focus"
             />
             <div v-if="tooltip" class="tooltip">
-                <span v-html="notation.display(node.expr)" /> fundamental sequence:
-                <div v-for="term in tooltipFS" :key="term" v-html="term" />
+                <span v-html="notation.display(node.expr)"/> fundamental sequence:
+                <div v-for="term in tooltipFS" :key="term" v-html="term"/>
             </div>
         </div>
-        <ul v-if="node.children.length > 0 && !ed.hide_child" class="nowrap">
+        <ul v-if="node.children.length > 0 && !ed.hide_child" class="nowrap tree-children">
             <NotationTreeItem
                 v-for="child in node.children"
                 :key="child.path ?? child.index"

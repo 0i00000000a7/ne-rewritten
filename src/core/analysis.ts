@@ -1,8 +1,8 @@
-import type {TreeNode} from './tree'
-import type {TreeNodeExtra} from './extra'
-import type {NotationDefinition} from '../utils'
-import {expand_item} from './expander'
-import {last_descendant, find_prev} from './tree'
+import type { TreeNode } from './tree'
+import type { TreeNodeExtra } from './extra'
+import type { NotationDefinition } from '../utils'
+import { expand_item } from './expander'
+import { last_descendant, find_prev } from './tree'
 
 // ---------------------------------------------------------------------------
 // 中间数据结构

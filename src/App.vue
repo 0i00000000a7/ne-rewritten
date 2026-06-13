@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import {inject, reactive, computed, onMounted, onUnmounted, ref} from 'vue'
-import {SETTINGS_KEY} from './composables/useSettings'
-import {get_notation, list_notations} from './core/registry'
-import {init_dataset} from './core/tree'
-import type {TreeNode} from './core/tree'
+import { inject, reactive, computed, onMounted, onUnmounted, ref } from 'vue'
+import { SETTINGS_KEY } from './composables/useSettings'
+import { get_notation, list_notations } from './core/registry'
+import { init_dataset } from './core/tree'
+import type { TreeNode } from './core/tree'
 import NotationTree from './components/NotationTree.vue'
-import {get_last_focus, focus_node, focus_node_input} from './composables/useFocusTracker'
-import {export_analysis, import_analysis} from './core/analysis'
-import {export_to_xlsx, import_from_xlsx, download_buffer} from './core/xlsx_io'
+import { get_last_focus, focus_node, focus_node_input } from './composables/useFocusTracker'
+import { export_analysis, import_analysis } from './core/analysis'
+import { export_to_xlsx, import_from_xlsx, download_buffer } from './core/xlsx_io'
 
-const {settings, update} = inject(SETTINGS_KEY)!
+const { settings, update } = inject(SETTINGS_KEY)!
 
 const notations = list_notations()
 
-// 持久化各节记的树（reactive 使得嵌套变更被 Vue 追踪）
 const trees = new Map<string, TreeNode<unknown>>()
 
 function get_or_create_tree(id: string): TreeNode<unknown> | null {
@@ -93,7 +92,7 @@ function handle_find() {
     if (!n || !r || !val || !n.from_display) return
     try {
         const expr = n.from_display(val)
-        const matched = import_analysis(r, [{expr, analysis: []}], n as any, 'FS')
+        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, 'FS')
         if (matched.length > 0) {
             focus_node_input(matched[0] as any)
         }
@@ -143,27 +142,34 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
             </button>
         </div>
 
-        <div>
-            <label>
-                Navigate to:
-                <input ref="find_input" type="text" @keydown="on_find_keydown"/>
-                <button @mousedown.prevent="handle_find">Find</button>
-            </label>
-        </div>
-
-        <div>
-            Tier: {{ tier_name }}
-            <button @mousedown="update({ tier: Math.max(settings.tier - 1, 0) })">-</button>
-            <button @mousedown="update({ tier: settings.tier + 1 })">+</button>
-            <button @mousedown="handle_export">Export</button>
-            <button @mousedown="handle_import">Import</button>
-            <input
-                ref="file_input"
-                type="file"
-                accept=".xlsx"
-                style="display:none"
-                @change="on_file_selected"
-            />
+        <div class="toolbar">
+            <div class="toolbar-row">
+                <label>
+                    Navigate to:
+                    <input ref="find_input" type="text" @keydown="on_find_keydown"/>
+                    <button @mousedown.prevent="handle_find">Find</button>
+                </label>
+            </div>
+            <div class="toolbar-row">
+                <span>
+                    Tier:
+                    <button class="tier-btn" @mousedown="update({ tier: Math.max(settings.tier - 1, 0) })"><span
+                        class="tier-icon">−</span></button>
+                    {{ tier_name }}
+                    <button class="tier-btn" @mousedown="update({ tier: settings.tier + 1 })"><span
+                        class="tier-icon">+</span></button>
+                </span>
+                <span class="toolbar-sep"></span>
+                <button @mousedown="handle_export">Export</button>
+                <button @mousedown="handle_import">Import</button>
+                <input
+                    ref="file_input"
+                    type="file"
+                    accept=".xlsx"
+                    style="display:none"
+                    @change="on_file_selected"
+                />
+            </div>
         </div>
 
         <div v-if="root && notation" class="preview-container">
@@ -184,11 +190,75 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
     border-radius: 10px;
     background-color: #daf;
     font-size: 20px;
+
+    font-family: inherit;
 }
 
 .tab > button[disabled] {
     background-color: #60a;
     color: #fff;
+}
+
+/* 工具栏 */
+.toolbar {
+    margin: 6px 0;
+}
+
+.toolbar-row {
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-sep {
+    width: 1px;
+    height: 1.2em;
+    background: #ccc;
+}
+
+/* 按钮统一样式 */
+.toolbar button {
+    padding: 2px 10px;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    background: #f8f8f8;
+    cursor: pointer;
+    font-size: 14px;
+
+    min-width: 4ch;
+}
+
+.toolbar button:hover {
+    background: #e8e8e8;
+}
+
+.toolbar button:active {
+    background: #d0d0d0;
+}
+
+.tier-icon {
+    display: inline-block;
+}
+
+.toolbar .tier-btn {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: sans-serif;
+    font-size: 16px;
+    min-width: 0;
+    line-height: 1;
+    box-sizing: border-box;
 }
 
 .nowrap {
@@ -222,6 +292,10 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
     color: #999;
 }
 
+.expr-display {
+    font-family: "Comic Sans MS", sans-serif;
+}
+
 .tooltip {
     display: inline-block;
     position: absolute;
@@ -234,7 +308,100 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
 
 ul {
     list-style: none;
-    padding-left: 16px;
+    padding-left: 0;
+    margin: 0;
+}
+
+.tree-children {
+    padding-left: 24px;
+    position: relative;
+}
+
+.tree-item {
+    position: relative;
+}
+
+.tree-item::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid #ddd;
+}
+
+.tree-item:last-child::before {
+    border-left: none;
+}
+
+.tree-item::after {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 0.6em;
+    width: 14px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tree-item:last-child::after {
+    width: 14px;
+}
+
+.tree-children > .tree-item:last-child::before {
+    border-left: 1px solid #ddd;
+}
+
+.tree-children > .tree-item:only-child::before {
+    border-left: 1px solid #ddd;
+}
+
+.fold-icon {
+    display: inline-block;
+    width: 1em;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.75em;
+    color: #888;
+    vertical-align: middle;
+}
+
+.fold-icon--spacer {
+    cursor: default;
+    visibility: hidden;
+}
+
+.fold-icon:hover {
+    color: #333;
+}
+
+/* 输入框统一样式 */
+.toolbar input[type="text"],
+.tree-item input[type="text"] {
+    font-family: inherit;
+    padding: 2px 8px;
+    height: 24px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.4;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.toolbar input[type="text"]:focus,
+.tree-item input[type="text"]:focus {
+    outline: none;
+    border-color: #7af;
+    box-shadow: 0 0 0 2px rgba(100, 160, 255, 0.25);
+}
+
+.tree-item input[type="text"] {
+    width: 180px;
+    margin-left: 4px;
+}
+
+body {
+    font-family: "Comic Sans MS", sans-serif;
 }
 
 body::after {

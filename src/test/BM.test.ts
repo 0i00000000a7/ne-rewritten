@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest'
-import {BM4, display, from_display, is_infinite, type Expr} from '../notations/BM'
+import { describe, expect, it } from 'vitest'
+import { BM4, display, from_display, is_infinite, type Expr } from '../notations/BM'
 
 // ===========================================================================
 // display 测试

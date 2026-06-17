@@ -1,13 +1,13 @@
 <script setup lang="ts" generic="T">
-import type { TreeNode } from '../core/tree'
-import type { NotationDefinition } from '../utils'
-import NotationTreeItem from './NotationTreeItem.vue'
+import type { TreeNode } from '@/core/tree';
+import type { NotationDefinition } from '@/utils';
+import NotationTreeItem from '@/components/NotationTreeItem.vue';
 
 defineProps<{
-    root: TreeNode<T>
-    notation: NotationDefinition<T>
-    tier?: number
-}>()
+    root: TreeNode<T>;
+    notation: NotationDefinition<T>;
+    tier?: number;
+}>();
 </script>
 
 <template>

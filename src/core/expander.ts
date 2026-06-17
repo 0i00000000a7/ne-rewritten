@@ -1,39 +1,24 @@
-import type { NotationDefinition } from '../utils'
-import type { TreeNode } from './tree'
-import { get_bound, prepend_child, append_sibling } from './tree'
+import type { NotationDefinition } from '@/utils';
+import type { TreeNode } from '@/core/tree';
+import { append_sibling, get_bound, prepend_child } from '@/core/tree';
 
-// ---------------------------------------------------------------------------
-// 基本列变体选择
-// ---------------------------------------------------------------------------
-
-function resolve_fs<T>(
-    notation: NotationDefinition<T>,
-    variant: string,
-): (expr: T, index: number) => T {
+function resolve_fs<T>(notation: NotationDefinition<T>, variant: string): (expr: T, index: number) => T {
     switch (variant) {
         case 'FS':
-            return notation.FS.bind(notation)
+            return notation.FS;
         case 'FS_alter':
-            return notation.FS_alter?.bind(notation) ?? notation.FS.bind(notation)
+            return notation.FS_alter ?? notation.FS;
         case 'FS_short':
-            return notation.FS_short?.bind(notation) ?? notation.FS.bind(notation)
+            return notation.FS_short ?? notation.FS_alter ?? notation.FS;
         default:
-            return notation.FS.bind(notation)
+            return notation.FS;
     }
 }
 
-// ---------------------------------------------------------------------------
-// 判断是否为 parent 的末子
-// ---------------------------------------------------------------------------
-
 function is_last_child<T>(node: TreeNode<T>): boolean {
-    const p = node.parent
-    return p !== null && p.children[p.children.length - 1] === node
+    const p = node.parent;
+    return p !== null && p.children[p.children.length - 1] === node;
 }
-
-// ---------------------------------------------------------------------------
-// 基本列生成（缓存递增 / 重扫）
-// ---------------------------------------------------------------------------
 
 function generate_fs<T>(
     node: TreeNode<T>,
@@ -42,26 +27,22 @@ function generate_fs<T>(
     compare: (a: T, b: T) => number,
     variant: string,
 ): T {
-    let i: number
+    let i: number;
     if (node.fs_state && node.fs_state.variant === variant) {
-        i = node.fs_state.index + 1
+        i = node.fs_state.index + 1;
     } else {
-        i = 0
+        i = 0;
     }
 
     while (true) {
-        const res = fs(node.expr, i)
+        const res = fs(node.expr, i);
         if (bound === undefined || compare(res, bound) > 0) {
-            node.fs_state = { variant, index: i }
-            return res
+            node.fs_state = { variant, index: i };
+            return res;
         }
-        i++
+        i++;
     }
 }
-
-// ---------------------------------------------------------------------------
-// 展开核心（递归 tier 展开）
-// ---------------------------------------------------------------------------
 
 function expand_tier_impl<T>(
     node: TreeNode<T>,
@@ -71,57 +52,53 @@ function expand_tier_impl<T>(
     tier: number,
     to_parent: boolean,
 ): TreeNode<T> | undefined {
-    const bound = get_bound(node)
+    const bound = get_bound(node);
 
-    // 1. 生成 FS 表达式
-    let result_expr: T
+    let result_expr: T;
     if (notation.is_limit(node.expr)) {
-        result_expr = generate_fs(node, fs, bound, notation.compare, variant)
+        result_expr = generate_fs(node, fs, bound, notation.compare, variant);
     } else {
-        result_expr = fs(node.expr, 0)
-        if (notation.compare(result_expr, node.expr) >= 0) return
-        if (bound !== undefined && notation.compare(result_expr, bound) <= 0) return
+        result_expr = fs(node.expr, 0);
+        if (notation.compare(result_expr, node.expr) >= 0) return;
+        if (bound !== undefined && notation.compare(result_expr, bound) <= 0) return;
     }
 
-    // 2. 计算新 bound
-    let new_bound: T | undefined
+    let new_bound: T | undefined;
     if (node.children.length > 0) {
-        new_bound = node.children[0].expr
+        new_bound = node.children[0].expr;
     } else if (to_parent) {
-        new_bound = bound
+        new_bound = bound;
     } else {
-        new_bound = get_bound(node)
+        new_bound = get_bound(node);
     }
 
-    // 3. 插入（子节点或同级）
-    let new_node: TreeNode<T>
+    let new_node: TreeNode<T>;
     if (to_parent) {
-        new_node = append_sibling(node, result_expr)
+        new_node = append_sibling(node, result_expr);
     } else {
-        new_node = prepend_child(node, result_expr)
+        new_node = prepend_child(node, result_expr);
     }
 
-    // 4. 递归展开，返回首个创建节点
     if (tier > 0) {
-        const new_to_parent = to_parent || node.children.length === 1
-        expand_tier_impl(new_node, notation, fs, variant, tier, new_to_parent)
+        const new_to_parent = to_parent || node.children.length === 1;
+        expand_tier_impl(new_node, notation, fs, variant, tier, new_to_parent);
         if (tier > 1) {
             if (new_node.children.length > 0) {
                 expand_tier_impl(
                     new_node.children[new_node.children.length - 1],
-                    notation, fs, variant, tier - 1, true,
-                )
+                    notation,
+                    fs,
+                    variant,
+                    tier - 1,
+                    true,
+                );
             } else {
-                expand_tier_impl(new_node, notation, fs, variant, tier - 1, false)
+                expand_tier_impl(new_node, notation, fs, variant, tier - 1, false);
             }
         }
     }
-    return new_node
+    return new_node;
 }
-
-// ---------------------------------------------------------------------------
-// 公开 API
-// ---------------------------------------------------------------------------
 
 /**
  * 展开当前节点。
@@ -134,8 +111,8 @@ export function expand_item<T>(
     variant: string,
     tier = 0,
 ): TreeNode<T> | undefined {
-    const fs = resolve_fs(notation, variant)
-    const parent = node.parent
-    const to_parent = parent?.parent !== null && is_last_child(node)
-    return expand_tier_impl(node, notation, fs, variant, tier, to_parent)
+    const fs = resolve_fs(notation, variant);
+    const parent = node.parent;
+    const to_parent = parent?.parent !== null && is_last_child(node);
+    return expand_tier_impl(node, notation, fs, variant, tier, to_parent);
 }

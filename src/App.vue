@@ -1,132 +1,163 @@
 <script setup lang="ts">
-import { inject, reactive, computed, onMounted, onUnmounted, ref } from 'vue'
-import { SETTINGS_KEY } from './composables/useSettings'
-import { get_notation, list_notations } from './core/registry'
-import { init_dataset } from './core/tree'
-import type { TreeNode } from './core/tree'
-import NotationTree from './components/NotationTree.vue'
-import { get_last_focus, focus_node, focus_node_input } from './composables/useFocusTracker'
-import { export_analysis, import_analysis } from './core/analysis'
-import { export_to_xlsx, import_from_xlsx, download_buffer } from './core/xlsx_io'
+import { computed, inject, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { SETTINGS_KEY } from '@/composables/use_settings.ts';
+import { get_notation, list_notations } from '@/core/registry';
+import type { TreeNode } from '@/core/tree';
+import { init_dataset } from '@/core/tree';
+import NotationTree from '@/components/NotationTree.vue';
+import { focus_node, focus_node_input, get_last_focus } from '@/composables/use_focus_tracker.ts';
+import { export_analysis, import_analysis } from '@/core/analysis';
+import { download_buffer, export_to_xlsx, import_from_xlsx } from '@/core/xlsx_io';
+import { resolve_display } from '@/utils';
+import { use_diagram } from '@/composables/use_diagram.ts';
+import DiagramViewer from '@/components/DiagramViewer.vue';
 
-const { settings, update } = inject(SETTINGS_KEY)!
+const settings = inject(SETTINGS_KEY)!;
+const { diagram, visible, pos_x, pos_y, hide } = use_diagram();
+const settings_collapsed = ref(true);
 
-const notations = list_notations()
+watch(
+    () => settings.font_family,
+    (v) => {
+        document.body.style.fontFamily = v + ', sans-serif';
+    },
+    { immediate: true },
+);
+const font_options = ['Comic Sans MS', 'Consolas', 'Microsoft YaHei UI'];
 
-const trees = new Map<string, TreeNode<unknown>>()
+const notations = list_notations();
+
+const trees: Map<string, TreeNode<unknown>> = reactive(new Map());
 
 function get_or_create_tree(id: string): TreeNode<unknown> | null {
-    let root = trees.get(id)
+    let root = trees.get(id);
     if (!root) {
-        const n = get_notation(id)
-        if (!n) return null
-        root = reactive(init_dataset(n)) as TreeNode<unknown>
-        trees.set(id, root)
+        const n = get_notation(id);
+        if (!n) return null;
+        root = reactive(init_dataset(n));
+        trees.set(id, root);
     }
-    return root
+    return root;
 }
 
-const current_id = computed(() => settings.value.current_notation_id)
-const root = computed(() => get_or_create_tree(current_id.value))
-const notation = computed(() => get_notation(current_id.value))
+const current_id = computed(() => settings.current_notation_id);
+const root = computed(() => get_or_create_tree(current_id.value));
+const notation = computed(() => get_notation(current_id.value));
+const equiv_options = computed(() => {
+    const n = notation.value;
+    return n?.display_equiv ? Object.keys(n.display_equiv) : [];
+});
 
-const tier_names = [
-    'small', 'single', 'double', 'triple', 'quadruple',
-    'quintuple', 'sextuple', 'septuple', 'octuple',
-]
+const tier_names = ['small', 'single', 'double', 'triple', 'quadruple', 'quintuple', 'sextuple', 'septuple', 'octuple'];
 
 const tier_name = computed(() => {
-    const t = settings.value.tier
-    if (0 <= t && t <= 7) return tier_names[t] + ' expansion'
-    return t + '-fold expansion'
-})
+    const t = settings.tier;
+    if (0 <= t && t <= 7) return tier_names[t] + ' expansion';
+    return t + '-fold expansion';
+});
 
-// ---------------------------------------------------------------------------
-// 导入 / 导出
-// ---------------------------------------------------------------------------
+const file_input = ref<HTMLInputElement>();
 
-const file_input = ref<HTMLInputElement>()
+function handle_reset() {
+    const n = notation.value;
+    if (!n || !confirm('Reset this notation? All expanded data will be lost.')) return;
+    const root: TreeNode<unknown> = reactive(init_dataset(n));
+    trees.set(n.id, root);
+}
 
 async function handle_export() {
-    const n = notation.value
-    const r = root.value
-    if (!n || !r) return
-    const entries = export_analysis(r)
-    const buf = await export_to_xlsx(entries, n as any)
-    download_buffer(buf, `${n.id}_analysis.xlsx`)
+    const n = notation.value;
+    const r = root.value;
+    if (!n || !r) return;
+    const entries = export_analysis(r);
+    const equiv_name = settings.equiv_active[n.id];
+    const disp =
+        equiv_name && n.display_equiv?.[equiv_name]
+            ? resolve_display(n.display_equiv[equiv_name]).plain
+            : resolve_display(n.display).plain;
+    const buf = await export_to_xlsx(entries, disp);
+    download_buffer(buf, `${n.id}_analysis.xlsx`);
 }
 
 async function handle_import() {
-    file_input.value?.click()
+    file_input.value?.click();
 }
 
 async function on_file_selected(e: Event) {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-    if (!file) return
-    const n = notation.value
-    const r = root.value
-    if (!n || !r) return
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const n = notation.value;
+    const r = root.value;
+    if (!n || !r) return;
+    const equiv_name = settings.equiv_active[n.id];
+    const disp_spec =
+        equiv_name && n.display_equiv?.[equiv_name]
+            ? resolve_display(n.display_equiv[equiv_name])
+            : resolve_display(n.display);
+    if (!disp_spec.from_display) return;
 
-    const buf = await file.arrayBuffer()
-    const entries = await import_from_xlsx(buf, n as any)
-    const matched = import_analysis(r, entries, n as any, 'FS')
+    const buf = await file.arrayBuffer();
+    const entries = await import_from_xlsx(buf, disp_spec.from_display);
+    const matched = import_analysis(r, entries, n as any, settings.variant);
     if (matched.length > 0) {
-        const last = matched[matched.length - 1]
-        const ed = (last.extraData ??= {}) as any
-        ed.focus_on_mounted = true
+        const last = matched[matched.length - 1];
+        const ed = (last.extraData ??= {}) as any;
+        ed.focus_on_mounted = true;
     }
-    input.value = ''
+    input.value = '';
 }
 
-// ---------------------------------------------------------------------------
-// 查找表达式
-// ---------------------------------------------------------------------------
-
-const find_input = ref<HTMLInputElement>()
+const find_input = ref<HTMLInputElement>();
 
 function handle_find() {
-    const n = notation.value
-    const r = root.value
-    const val = find_input.value?.value
-    if (!n || !r || !val || !n.from_display) return
+    const n = notation.value;
+    const r = root.value;
+    const val = find_input.value?.value;
+    if (!n || !r || !val) return;
+    const equiv_name = settings.equiv_active[n.id];
+    const disp_spec =
+        equiv_name && n.display_equiv?.[equiv_name]
+            ? resolve_display(n.display_equiv[equiv_name])
+            : resolve_display(n.display);
+    if (!disp_spec.from_display) return;
     try {
-        const expr = n.from_display(val)
-        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, 'FS')
+        const expr = disp_spec.from_display(val);
+        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, settings.variant);
         if (matched.length > 0) {
-            focus_node_input(matched[0] as any)
+            focus_node_input(matched[0] as any);
         }
-    } catch (_) {
-    }
+    } catch (_) {}
 }
 
 function on_find_keydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
-        e.preventDefault()
-        handle_find()
+        e.preventDefault();
+        handle_find();
     }
 }
-
-// ---------------------------------------------------------------------------
-// 全局 Ctrl
-// ---------------------------------------------------------------------------
 
 function on_global_keydown(e: KeyboardEvent) {
-    if (
-        (e.ctrlKey || e.metaKey) &&
-        !['c', 'v', 'a', 'x', 'z', 'r'].includes(e.key.toLowerCase())
-    ) {
-        e.preventDefault()
+    if ((e.ctrlKey || e.metaKey) && !['c', 'v', 'a', 'x', 'z', 'r'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
     }
     if (e.key.toLowerCase() === 'r' && e.ctrlKey && !e.shiftKey && !e.altKey) {
-        e.preventDefault()
-        const path = get_last_focus()
-        if (path) focus_node(path)
+        e.preventDefault();
+        const path = get_last_focus();
+        if (path) focus_node(path);
+    }
+    if (e.key.toLowerCase() === 's' && e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        handle_export();
+    }
+    if (e.key.toLowerCase() === 'l' && e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        handle_import();
     }
 }
 
-onMounted(() => document.addEventListener('keydown', on_global_keydown))
-onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
+onMounted(() => document.addEventListener('keydown', on_global_keydown));
+onUnmounted(() => document.removeEventListener('keydown', on_global_keydown));
 </script>
 
 <template>
@@ -136,50 +167,149 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
                 v-for="n in notations"
                 :key="n.id"
                 :disabled="n.id === settings.current_notation_id"
-                @mousedown="update({ current_notation_id: n.id })"
+                @mousedown="settings.current_notation_id = n.id"
             >
                 {{ n.name }}
             </button>
         </div>
 
-        <div class="toolbar">
-            <div class="toolbar-row">
-                <label>
-                    Navigate to:
-                    <input ref="find_input" type="text" @keydown="on_find_keydown"/>
-                    <button @mousedown.prevent="handle_find">Find</button>
-                </label>
+        <div class="settings-box">
+            <div class="toolbar">
+                <div class="toolbar-row">
+                    <label>
+                        Navigate to:
+                        <input ref="find_input" type="text" @keydown="on_find_keydown" />
+                        <button @mousedown.prevent="handle_find">Find</button>
+                    </label>
+                </div>
+                <div class="toolbar-row">
+                    <label>
+                        FS variant:
+                        <select v-model="settings.variant" @mousedown.stop>
+                            <option value="FS">normal</option>
+                            <option value="FS_alter">alternative</option>
+                            <option value="FS_short">short</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="toolbar-row">
+                    <button class="reset-btn" @mousedown="handle_reset">Reset</button>
+                    <button @mousedown="handle_export">Export</button>
+                    <button @mousedown="handle_import">Import</button>
+                    <input
+                        ref="file_input"
+                        type="file"
+                        accept=".xlsx"
+                        style="display: none"
+                        @change="on_file_selected"
+                    />
+                </div>
+                <div v-if="!settings_collapsed && equiv_options.length > 0" class="toolbar-row">
+                    <label>
+                        Equivalent notation:
+                        <select
+                            :value="settings.equiv_active[current_id] ?? ''"
+                            @mousedown.stop
+                            @change="
+                                (e: any) => {
+                                    settings.equiv_active = {
+                                        ...settings.equiv_active,
+                                        [current_id]: (e.target as HTMLSelectElement).value || undefined,
+                                    };
+                                }
+                            "
+                        >
+                            <option value="">(none)</option>
+                            <option v-for="k in equiv_options" :key="k" :value="k">
+                                {{ k }}
+                            </option>
+                        </select>
+                    </label>
+                    <label style="margin-left: 8px" v-if="settings.equiv_active[current_id]">
+                        <input
+                            type="checkbox"
+                            :checked="settings.equiv_hide_original[current_id] ?? true"
+                            @change="
+                                (e: any) => {
+                                    settings.equiv_hide_original = {
+                                        ...settings.equiv_hide_original,
+                                        [current_id]: (e.target as HTMLInputElement).checked,
+                                    };
+                                }
+                            "
+                        />
+                        Hide original
+                    </label>
+                </div>
+                <div v-if="!settings_collapsed" class="toolbar-row">
+                    <span style="margin-right: 8px">
+                        Display:
+                        <button
+                            class="toggle-btn"
+                            @mousedown="settings.display_html_mode = !settings.display_html_mode"
+                        >
+                            {{ settings.display_html_mode ? 'html' : 'plain' }}
+                        </button>
+                    </span>
+                    <span>
+                        Tier:
+                        <button class="tier-btn" @mousedown="settings.tier = Math.max(settings.tier - 1, 0)">
+                            <span class="tier-icon">−</span>
+                        </button>
+                        {{ tier_name }}
+                        <button class="tier-btn" @mousedown="settings.tier = settings.tier + 1">
+                            <span class="tier-icon">+</span>
+                        </button>
+                    </span>
+                </div>
+                <div v-if="!settings_collapsed" class="toolbar-row">
+                    <span style="margin-right: 8px">
+                        Analysis input:
+                        <button class="toggle-btn" @mousedown="settings.show_input = !settings.show_input">
+                            {{ settings.show_input ? 'hide' : 'show' }}
+                        </button>
+                    </span>
+                    <label v-if="settings.show_input">
+                        Input width:
+                        <input
+                            type="range"
+                            min="60"
+                            max="600"
+                            v-model.number="settings.input_width"
+                            style="vertical-align: middle"
+                        />
+                        {{ settings.input_width }}px
+                    </label>
+                </div>
+                <div v-if="!settings_collapsed" class="toolbar-row">
+                    <label>
+                        Font:
+                        <select v-model="settings.font_family" @mousedown.stop>
+                            <option v-for="f in font_options" :key="f" :value="f">
+                                {{ f }}
+                            </option>
+                        </select>
+                    </label>
+                </div>
             </div>
-            <div class="toolbar-row">
-                <span>
-                    Tier:
-                    <button class="tier-btn" @mousedown="update({ tier: Math.max(settings.tier - 1, 0) })"><span
-                        class="tier-icon">−</span></button>
-                    {{ tier_name }}
-                    <button class="tier-btn" @mousedown="update({ tier: settings.tier + 1 })"><span
-                        class="tier-icon">+</span></button>
-                </span>
-                <span class="toolbar-sep"></span>
-                <button @mousedown="handle_export">Export</button>
-                <button @mousedown="handle_import">Import</button>
-                <input
-                    ref="file_input"
-                    type="file"
-                    accept=".xlsx"
-                    style="display:none"
-                    @change="on_file_selected"
-                />
-            </div>
+            <button class="collapse-btn" @mousedown="settings_collapsed = !settings_collapsed">
+                {{ settings_collapsed ? '▼ More' : '▲ Less' }}
+            </button>
         </div>
 
         <div v-if="root && notation" class="preview-container">
-            <NotationTree
-                :root="root"
-                :notation="(notation as any)"
-                :tier="settings.tier"
-            />
+            <NotationTree :root="root" :notation="notation as any" :tier="settings.tier" />
         </div>
         <div v-else>No notation selected</div>
+        <div
+            v-if="visible && diagram"
+            class="diagram-floating"
+            :style="{ left: pos_x + 'px', top: pos_y + 'px' }"
+            @mousedown.stop
+        >
+            <button class="diagram-close" @mousedown.stop="hide">✕</button>
+            <DiagramViewer :diagram="diagram" />
+        </div>
     </div>
 </template>
 
@@ -199,7 +329,31 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
     color: #fff;
 }
 
-/* 工具栏 */
+.settings-box {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 8px 12px 4px;
+    margin: 8px 0;
+}
+
+.collapse-btn {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 2px 0;
+    border: none;
+    border-top: 1px solid #eee;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    color: #888;
+    font-family: inherit;
+}
+
+.collapse-btn:hover {
+    color: #333;
+}
+
 .toolbar {
     margin: 6px 0;
 }
@@ -218,7 +372,6 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
     background: #ccc;
 }
 
-/* 按钮统一样式 */
 .toolbar button {
     padding: 2px 10px;
     font-family: inherit;
@@ -241,6 +394,14 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
 
 .toolbar button:active {
     background: #d0d0d0;
+}
+
+.reset-btn {
+    color: #c00;
+}
+
+.reset-btn:hover {
+    background: #fdd !important;
 }
 
 .tier-icon {
@@ -293,7 +454,15 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
 }
 
 .expr-display {
-    font-family: "Comic Sans MS", sans-serif;
+    font-family: 'Comic Sans MS', sans-serif;
+}
+
+.expr-display.shifted {
+    margin-left: 12px;
+    color: #666;
+}
+
+.expr-display.equiv {
 }
 
 .tooltip {
@@ -301,9 +470,13 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown))
     position: absolute;
     z-index: 1073741824;
     bottom: 100%;
-    padding: 2px 5px;
-    background-color: #dfd;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     text-align: left;
+    line-height: 1.4;
 }
 
 ul {
@@ -374,9 +547,8 @@ ul {
     color: #333;
 }
 
-/* 输入框统一样式 */
-.toolbar input[type="text"],
-.tree-item input[type="text"] {
+.toolbar input[type='text'],
+.tree-item input[type='text'] {
     font-family: inherit;
     padding: 2px 8px;
     height: 24px;
@@ -388,25 +560,85 @@ ul {
     background: #fff;
 }
 
-.toolbar input[type="text"]:focus,
-.tree-item input[type="text"]:focus {
+.toolbar input[type='text']:focus,
+.tree-item input[type='text']:focus {
     outline: none;
     border-color: #7af;
     box-shadow: 0 0 0 2px rgba(100, 160, 255, 0.25);
 }
 
-.tree-item input[type="text"] {
-    width: 180px;
-    margin-left: 4px;
+.input-resize {
+    display: inline-block;
+    overflow: hidden;
+    resize: horizontal;
+    min-width: 60px;
+    max-width: 600px;
+    vertical-align: middle;
+}
+
+.input-resize.input-hidden {
+    display: none;
+}
+
+.tree-item input[type='text'] {
+    width: 100%;
+    margin: 0;
 }
 
 body {
-    font-family: "Comic Sans MS", sans-serif;
+    font-family: 'Comic Sans MS', sans-serif;
+}
+
+.toolbar select {
+    padding: 2px 6px;
+    height: 24px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    background: #f8f8f8;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    text-align: center;
+    text-align-last: center;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.toolbar select:hover {
+    background: #e8e8e8;
 }
 
 body::after {
-    content: "";
+    content: '';
     display: block;
     height: 100vh;
+}
+
+.diagram-floating {
+    position: fixed;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+}
+
+.diagram-close {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #999;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.diagram-close:hover {
+    color: #333;
 }
 </style>

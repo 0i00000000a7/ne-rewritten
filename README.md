@@ -1,4 +1,4 @@
-# NE — 序数记号展开器 (Ordinal Notation Expander)
+# Notation Explorer Rewritten
 
 基于 [notation-explorer](https://github.com/hypcos/notation-explorer) 使用 TypeScript 重构的展开器。
 

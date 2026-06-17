@@ -1,7 +1,5 @@
 import type { NotationDefinition } from '@/utils';
-import { display as BM_display, from_display as BM_from_display } from '@/notations/BM';
-
-export type Expr = number[][];
+import { display, from_display, convert_to_0Y, Expr } from '@/notations/BM';
 
 const isPseudoInfinity = (expr: any): boolean => '' + expr === 'Infinity';
 const cloneColumn = (col: number[]) => col.slice();
@@ -78,13 +76,6 @@ const matrixCompare = (m1: Expr, m2: Expr): number => {
         if (cmp !== 0) return cmp;
     }
     return 0;
-};
-
-const matrixDisplay = (expr: Expr): string => {
-    if (isPseudoInfinity(expr)) return 'Limit';
-    return standardizeMatrix(expr)
-        .map((col) => '(' + col.join(',') + ')')
-        .join('');
 };
 
 interface Context {
@@ -386,9 +377,9 @@ const FS_cache = new Map<string, Expr>();
 export const UPMS: NotationDefinition<Expr> = {
     id: 'upms',
     name: 'Unupgrading projection matrix system',
-    display: { plain: matrixDisplay, from_display: BM_from_display },
+    display: { plain: display, from_display },
     display_equiv: {
-        'UP0Y': { plain: BM_display, from_display: BM_from_display },
+        'UP0Y': { plain: (m) => (isPseudoInfinity(m) ? '1,ω' : '' + convert_to_0Y(m)), from_display },
     },
     is_limit: upmsLimit,
     compare: matrixCompare,
@@ -396,7 +387,7 @@ export const UPMS: NotationDefinition<Expr> = {
         const n = Math.max(0, Math.floor(index));
         if (isPseudoInfinity(expr)) return [Array(n + 1).fill(0), Array(n + 1).fill(1)];
         const standardized = standardizeMatrix(expr);
-        const cacheKey = matrixDisplay(standardized) + '[' + n + ']';
+        const cacheKey = display(standardized) + '[' + n + ']';
         if (FS_cache.has(cacheKey)) return cloneMatrix(FS_cache.get(cacheKey)!);
         const result = expandUPMS(standardized, n);
         FS_cache.set(cacheKey, cloneMatrix(result));

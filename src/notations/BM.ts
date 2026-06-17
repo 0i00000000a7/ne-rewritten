@@ -194,7 +194,7 @@ function expand(m: Expr, index: number): Expr {
  * 将 Bashicu 矩阵转换为 0-Y 数列。
  * 用于显示等价表示。
  */
-function convert_to_0Y(m: Expr): number[] {
+export function convert_to_0Y(m: Expr): number[] {
     const P = parents(m);
     const mountain: number[][] = [];
     for (let i = 0; i < m.length; i++) {

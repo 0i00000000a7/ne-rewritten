@@ -96,16 +96,21 @@ function load_analysis(id: string, r: TreeNode<unknown>) {
     try {
         const entries: any[] = JSON.parse(raw);
         import_analysis(r, entries, n as any, settings.variant, settings.max_find_fs);
-    } catch { /* ignore corrupt data */ }
+    } catch {
+        /* ignore corrupt data */
+    }
 }
 
 watch(root, (r, old) => {
     if (r && r !== old) load_analysis(current_id.value, r);
 });
-watch(() => settings.current_notation_id, () => {
-    const r = root.value;
-    if (r) load_analysis(current_id.value, r);
-});
+watch(
+    () => settings.current_notation_id,
+    () => {
+        const r = root.value;
+        if (r) load_analysis(current_id.value, r);
+    },
+);
 
 function handle_reset() {
     const n = notation.value;

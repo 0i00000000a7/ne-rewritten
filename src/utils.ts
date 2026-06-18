@@ -31,7 +31,11 @@ export function anti_lex_compare<T>(a: T[], b: T[], cmp: (a: T, b: T) => number)
     return 0;
 }
 
-export function tuple_lex_compare<T extends any[]>(a: T, b: T, cmp: { [i in keyof T]: (a: T[i], b: T[i]) => number }): number;
+export function tuple_lex_compare<T extends any[]>(
+    a: T,
+    b: T,
+    cmp: { [i in keyof T]: (a: T[i], b: T[i]) => number },
+): number;
 
 export function tuple_lex_compare(a: any[], b: any[], cmp: ((a: any, b: any) => number)[]): number {
     for (let i = 0; i < cmp.length; i++) {
@@ -67,10 +71,10 @@ export type NotationDisplay<T> = (a: T) => string;
 export type NotationDisplaySpec<T> =
     | NotationDisplay<T>
     | {
-    plain: NotationDisplay<T>;
-    html?: NotationDisplay<T>;
-    from_display?: (str: string) => T;
-};
+          plain: NotationDisplay<T>;
+          html?: NotationDisplay<T>;
+          from_display?: (str: string) => T;
+      };
 
 export function resolve_display<T>(spec: NotationDisplaySpec<T>): {
     plain: NotationDisplay<T>;

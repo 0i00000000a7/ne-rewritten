@@ -1,6 +1,6 @@
 import type { NotationDefinition } from '@/utils.ts';
 import { lex_compare, number_compare } from '@/utils.ts';
-import { Y_FS_variants } from "@/notations/FS_util.ts";
+import { Y_FS_variants } from '@/notations/FS_util.ts';
 
 type Expr = number[];
 type Vertical = number[];

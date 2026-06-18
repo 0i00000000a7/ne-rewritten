@@ -1,5 +1,5 @@
 import type { NotationDefinition } from '@/utils';
-import { convert_to_0Y, from_display } from "@/notations/BM-like/BM.ts";
+import { convert_to_0Y, from_display } from '@/notations/BM-like/BM.ts';
 
 export type Expr = number[][];
 
@@ -33,13 +33,25 @@ const constCol = (a: number, rows: number): number[] => {
     return col;
 };
 
-const colValue = (matrix: Expr, colIndex: number, rowIndex: number, rows: number = maxRows(matrix), missing: number = 0): number => {
+const colValue = (
+    matrix: Expr,
+    colIndex: number,
+    rowIndex: number,
+    rows: number = maxRows(matrix),
+    missing: number = 0,
+): number => {
     if (colIndex < 0 || colIndex >= matrix.length) return missing;
     const col = matrix[colIndex];
     return rowIndex < col.length ? col[rowIndex] : 0;
 };
 
-const colCompare = (a: number[] | undefined, b: number[] | undefined, rows: number = Math.max(a ? a.length : 0, b ? b.length : 0), missingA: number = 0, missingB: number = 0): number => {
+const colCompare = (
+    a: number[] | undefined,
+    b: number[] | undefined,
+    rows: number = Math.max(a ? a.length : 0, b ? b.length : 0),
+    missingA: number = 0,
+    missingB: number = 0,
+): number => {
     for (let r = 0; r < rows; r++) {
         const av = a ? (r < a.length ? a[r] : 0) : missingA;
         const bv = b ? (r < b.length ? b[r] : 0) : missingB;
@@ -50,20 +62,26 @@ const colCompare = (a: number[] | undefined, b: number[] | undefined, rows: numb
 };
 
 const getPhaseColumn = (matrix: Expr, index: number, rows: number): number[] =>
-    (index >= 0 && index < matrix.length) ? matrix[index] : Array(rows).fill(-1);
+    index >= 0 && index < matrix.length ? matrix[index] : Array(rows).fill(-1);
 
 const phaseColCompare = (matrix: Expr, index: number, col: number[], rows: number): number =>
     colCompare(getPhaseColumn(matrix, index, rows), col, rows, -1, 0);
 
-const phaseColEq = (matrix: Expr, index: number, col: number[], rows: number): boolean => phaseColCompare(matrix, index, col, rows) === 0;
-const phaseColLt = (matrix: Expr, index: number, col: number[], rows: number): boolean => phaseColCompare(matrix, index, col, rows) < 0;
-const phaseColLe = (matrix: Expr, index: number, col: number[], rows: number): boolean => phaseColCompare(matrix, index, col, rows) <= 0;
-const phaseColGt = (matrix: Expr, index: number, col: number[], rows: number): boolean => phaseColCompare(matrix, index, col, rows) > 0;
-const phaseColGe = (matrix: Expr, index: number, col: number[], rows: number): boolean => phaseColCompare(matrix, index, col, rows) >= 0;
+const phaseColEq = (matrix: Expr, index: number, col: number[], rows: number): boolean =>
+    phaseColCompare(matrix, index, col, rows) === 0;
+const phaseColLt = (matrix: Expr, index: number, col: number[], rows: number): boolean =>
+    phaseColCompare(matrix, index, col, rows) < 0;
+const phaseColLe = (matrix: Expr, index: number, col: number[], rows: number): boolean =>
+    phaseColCompare(matrix, index, col, rows) <= 0;
+const phaseColGt = (matrix: Expr, index: number, col: number[], rows: number): boolean =>
+    phaseColCompare(matrix, index, col, rows) > 0;
+const phaseColGe = (matrix: Expr, index: number, col: number[], rows: number): boolean =>
+    phaseColCompare(matrix, index, col, rows) >= 0;
 
 const matrixCompare = (m1: Expr, m2: Expr): number => {
-    const inf1 = pseudoInfinity(m1), inf2 = pseudoInfinity(m2);
-    if (inf1 || inf2) return inf1 === inf2 ? 0 : (inf1 ? 1 : -1);
+    const inf1 = pseudoInfinity(m1),
+        inf2 = pseudoInfinity(m2);
+    if (inf1 || inf2) return inf1 === inf2 ? 0 : inf1 ? 1 : -1;
     const rows = Math.max(maxRows(m1), maxRows(m2));
     const len = Math.max(m1.length, m2.length);
     for (let c = 0; c < len; c++) {
@@ -109,7 +127,9 @@ const makeCtx = (matrix: Expr, rows: number = maxRows(matrix)): Ctx => {
     const m = standardize(matrix, rows);
     const cols = m.length;
     const parentCache: number[][] = Array.from({ length: rows + 1 }, () => Array(cols).fill(-2));
-    const ancCache: ({ list: number[]; mask: Uint8Array } | null)[][] = Array.from({ length: rows + 1 }, () => Array(cols).fill(null));
+    const ancCache: ({ list: number[]; mask: Uint8Array } | null)[][] = Array.from({ length: rows + 1 }, () =>
+        Array(cols).fill(null),
+    );
 
     const getBParent = (col: number, b: number): number => {
         if (b < 1 || b > rows || col < 0 || col >= cols) return -1;
@@ -122,7 +142,10 @@ const makeCtx = (matrix: Expr, rows: number = maxRows(matrix)): Ctx => {
         for (let i = 0; i < ancestors.length; i++) {
             const cand = ancestors[i];
             if (cand >= col) continue;
-            if (m[cand][row] < value) { best = cand; break; }
+            if (m[cand][row] < value) {
+                best = cand;
+                break;
+            }
         }
         parentCache[b][col] = best;
         return best;
@@ -134,12 +157,14 @@ const makeCtx = (matrix: Expr, rows: number = maxRows(matrix)): Ctx => {
         if (cached) return cached;
         const list: number[] = [];
         const mask = new Uint8Array(cols);
-        let current = col, guard = 0;
+        let current = col,
+            guard = 0;
         while (current !== -1 && !mask[current] && guard++ <= cols + 2) {
-            list.push(current); mask[current] = 1;
+            list.push(current);
+            mask[current] = 1;
             current = a === 0 ? (current > 0 ? current - 1 : -1) : getBParent(current, a);
         }
-        return ancCache[a][col] = { list, mask };
+        return (ancCache[a][col] = { list, mask });
     };
 
     return { m, rows, cols, getBParent, getAAncestors };
@@ -152,7 +177,8 @@ const lastNonZeroRow = (matrix: Expr): number => {
     return -1;
 };
 
-const lastAllZero = (matrix: Expr): boolean => matrix.length === 0 || matrix[matrix.length - 1].every((v: number) => v === 0);
+const lastAllZero = (matrix: Expr): boolean =>
+    matrix.length === 0 || matrix[matrix.length - 1].every((v: number) => v === 0);
 
 const computeDelta = (ctx: Ctx, root: number, t: number): number[] => {
     const alpha = ctx.cols - 1;
@@ -205,8 +231,10 @@ const upmsPrepare = (matrix: Expr, rows: number = maxRows(matrix)): Prep | null 
     vr.fill(-1);
     const vri = (c: number, r: number) => c * Math.max(1, ctx.rows) + r;
     const inBad = (c: number, r: number) => c >= root && c < alpha && r < t - 1;
-    const getVR = (c: number, r: number): number => inBad(c, r) ? vr[vri(c, r)] : -1;
-    const setVR = (c: number, r: number, val: number) => { vr[vri(c, r)] = val; };
+    const getVR = (c: number, r: number): number => (inBad(c, r) ? vr[vri(c, r)] : -1);
+    const setVR = (c: number, r: number, val: number) => {
+        vr[vri(c, r)] = val;
+    };
 
     const baseColFor = (col: number, k: number): number[] => {
         const base = Array(ctx.rows).fill(0);
@@ -220,20 +248,33 @@ const upmsPrepare = (matrix: Expr, rows: number = maxRows(matrix)): Prep | null 
         let u = -1;
         let uMissing = false;
         for (let c = col + 1; c <= alpha; c++) {
-            if (colCompare(ctx.m[c], base, ctx.rows) < 0) { u = c; break; }
+            if (colCompare(ctx.m[c], base, ctx.rows) < 0) {
+                u = c;
+                break;
+            }
         }
-        if (u < 0) { u = alpha + 1; uMissing = true; }
+        if (u < 0) {
+            u = alpha + 1;
+            uMissing = true;
+        }
 
         const Ayk = ctx.m[root][k - 1];
         const alphaAnc = ctx.getAAncestors(alpha, k).list;
         let j = -1;
         for (const c of alphaAnc) {
-            if (ctx.m[c][k - 1] === Ayk + 1) { j = c; break; }
+            if (ctx.m[c][k - 1] === Ayk + 1) {
+                j = c;
+                break;
+            }
         }
         if (j < 0) j = alpha;
 
-        const xStart = col, xEnd = u - 1, yStart = j, yEnd = alpha;
-        const X: number[][] = [], Y: number[][] = [];
+        const xStart = col,
+            xEnd = u - 1,
+            yStart = j,
+            yEnd = alpha;
+        const X: number[][] = [],
+            Y: number[][] = [];
         for (let c = xStart; c <= xEnd; c++) {
             const out = ctx.m[c].slice();
             for (let s = 1; s <= k - 1; s++) {
@@ -267,36 +308,69 @@ const upmsPrepare = (matrix: Expr, rows: number = maxRows(matrix)): Prep | null 
     for (let row = 0; row < t - 1; row++) {
         const k = row + 1;
         for (let col = root; col < alpha; col++) {
-            if (col === root || row === 0) { setVR(col, row, 1); continue; }
+            if (col === root || row === 0) {
+                setVR(col, row, 1);
+                continue;
+            }
             const ancestors = ctx.getAAncestors(col, k);
             let has0 = false;
-            for (const a of ancestors.list) if (getVR(a, row) === 0) { has0 = true; break; }
+            for (const a of ancestors.list)
+                if (getVR(a, row) === 0) {
+                    has0 = true;
+                    break;
+                }
             const parent = ctx.getBParent(col, k);
-            if (ancestors.mask[root] !== 1 || has0 || parent < 0) { setVR(col, row, 0); continue; }
-            if (parent !== root) { setVR(col, row, 1); continue; }
+            if (ancestors.mask[root] !== 1 || has0 || parent < 0) {
+                setVR(col, row, 0);
+                continue;
+            }
+            if (parent !== root) {
+                setVR(col, row, 1);
+                continue;
+            }
 
             let earlier0 = false;
-            for (let r = 0; r < row; r++) if (getVR(col, r) === 0) { earlier0 = true; break; }
-            if (earlier0) { setVR(col, row, 0); continue; }
+            for (let r = 0; r < row; r++)
+                if (getVR(col, r) === 0) {
+                    earlier0 = true;
+                    break;
+                }
+            if (earlier0) {
+                setVR(col, row, 0);
+                continue;
+            }
 
             let higherEscapes = false;
-            for (let r = row + 1; r < t - 1; r++) if (ctx.getBParent(col, r + 1) !== root) { higherEscapes = true; break; }
-            if (higherEscapes) { setVR(col, row, 0); continue; }
+            for (let r = row + 1; r < t - 1; r++)
+                if (ctx.getBParent(col, r + 1) !== root) {
+                    higherEscapes = true;
+                    break;
+                }
+            if (higherEscapes) {
+                setVR(col, row, 0);
+                continue;
+            }
 
             const { X, Y, u, uMissing } = buildXY(col, k);
-            if (u === alpha + 1 || uMissing) { setVR(col, row, 1); continue; }
+            if (u === alpha + 1 || uMissing) {
+                setVR(col, row, 1);
+                continue;
+            }
             setVR(col, row, matrixLexCompare(X, Y) < 0 ? 0 : 1);
         }
     }
 
-    const Bhs = (h: number): Expr => B.map((col: number[], local: number) => {
-        const original = root + local;
-        const out = Array(ctx.rows);
-        for (let r = 0; r < ctx.rows; r++) out[r] = col[r] + h * delta[r] * (r < t - 1 && getVR(original, r) === 1 ? 1 : 0);
-        return out;
-    });
+    const Bhs = (h: number): Expr =>
+        B.map((col: number[], local: number) => {
+            const original = root + local;
+            const out = Array(ctx.rows);
+            for (let r = 0; r < ctx.rows; r++)
+                out[r] = col[r] + h * delta[r] * (r < t - 1 && getVR(original, r) === 1 ? 1 : 0);
+            return out;
+        });
 
-    const B1 = Bhs(1), B2 = Bhs(2);
+    const B1 = Bhs(1),
+        B2 = Bhs(2);
     return { ctx, root, t, alpha, G, B, B1, B2, delta, getVR, buildXY };
 };
 
@@ -308,10 +382,18 @@ const upmsFS = (matrix: Expr, n: number, rows: number = maxRows(matrix)): Expr =
     if (!prep) return [];
     const result: Expr = [...prep.G.map(cloneCol), ...prep.B.map(cloneCol)];
     for (let h = 1; h <= n; h++) {
-        const Bh = h === 1 ? prep.B1 : (h === 2 ? prep.B2 : prep.B.map((col: number[], local: number) => {
-            const original = prep.root + local;
-            return col.map((v: number, r: number) => v + h * prep.delta[r] * (r < prep.t - 1 && prep.getVR(original, r) === 1 ? 1 : 0));
-        }));
+        const Bh =
+            h === 1
+                ? prep.B1
+                : h === 2
+                  ? prep.B2
+                  : prep.B.map((col: number[], local: number) => {
+                        const original = prep.root + local;
+                        return col.map(
+                            (v: number, r: number) =>
+                                v + h * prep.delta[r] * (r < prep.t - 1 && prep.getVR(original, r) === 1 ? 1 : 0),
+                        );
+                    });
         for (const col of Bh) result.push(col.slice());
     }
     return standardize(result, rows);
@@ -323,7 +405,10 @@ const upmsSingle = (matrix: Expr, l: number = Infinity, rows: number = maxRows(m
     const prep = upmsPrepare(m, rows);
     if (!prep) return [];
     const take = Math.min(prep.B1.length, Number.isFinite(l) ? l : prep.B1.length);
-    return standardize([...prep.G.map(cloneCol), ...prep.B.map(cloneCol), ...prep.B1.slice(0, take).map(cloneCol)], rows);
+    return standardize(
+        [...prep.G.map(cloneCol), ...prep.B.map(cloneCol), ...prep.B1.slice(0, take).map(cloneCol)],
+        rows,
+    );
 };
 
 const bmsFS = (matrix: Expr, n: number, rows: number = maxRows(matrix)): Expr => {
@@ -338,12 +423,16 @@ const bmsFS = (matrix: Expr, n: number, rows: number = maxRows(matrix)): Expr =>
     const G = ctx.m.slice(0, root).map(cloneCol);
     const B = ctx.m.slice(root, alpha).map(cloneCol);
     const delta = computeDelta(ctx, root, t);
-    const ancestorContainsRoot = (col: number, rowLabel: number): boolean => ctx.getAAncestors(col, rowLabel).mask[root] === 1;
+    const ancestorContainsRoot = (col: number, rowLabel: number): boolean =>
+        ctx.getAAncestors(col, rowLabel).mask[root] === 1;
     const result: Expr = [...G, ...B.map(cloneCol)];
     for (let h = 1; h <= n; h++) {
         for (let local = 0; local < B.length; local++) {
             const original = root + local;
-            const out = B[local].map((v: number, r: number) => v + h * delta[r] * (r < t - 1 && ancestorContainsRoot(original, r + 1) ? 1 : 0));
+            const out = B[local].map(
+                (v: number, r: number) =>
+                    v + h * delta[r] * (r < t - 1 && ancestorContainsRoot(original, r + 1) ? 1 : 0),
+            );
             result.push(out);
         }
     }
@@ -360,7 +449,8 @@ const firstDifferentColumn = (X: number[][], Y: number[][], rows: number): numbe
     return X.length + 1;
 };
 
-const matricesEqual = (X: number[][], Y: number[][], rows: number): boolean => firstDifferentColumn(X, Y, rows) === X.length + 1 && X.length === Y.length;
+const matricesEqual = (X: number[][], Y: number[][], rows: number): boolean =>
+    firstDifferentColumn(X, Y, rows) === X.length + 1 && X.length === Y.length;
 
 const columnCPrime = (M: Expr, r: number, n: number, rows: number): number[] => {
     const out = Array(rows).fill(0);
@@ -422,7 +512,9 @@ const lpmsSingle = (matrix: Expr): Expr => {
     if (!prep) return [];
     const { ctx, root: r, t: n, alpha } = prep;
     let Mp: Expr = [...prep.G.map(cloneCol), ...prep.B.map(cloneCol)];
-    let mSwitch = true, bSwitch = true, l = 0;
+    let mSwitch = true,
+        bSwitch = true,
+        l = 0;
     const skip: boolean[] = Array(ctx.cols).fill(false);
     const desc = new Uint8Array(ctx.cols * Math.max(1, rows));
     const state = { Mp, rows, desc };
@@ -442,8 +534,9 @@ const lpmsSingle = (matrix: Expr): Expr => {
 
         // case 2
         if (bSwitch) {
-            appendS(state, prep, t); Mp = state.Mp;
-            if ((n >= rows || M[r][n] === 0) || phaseColLe(M, t + 1, cPrime, rows)) {
+            appendS(state, prep, t);
+            Mp = state.Mp;
+            if (n >= rows || M[r][n] === 0 || phaseColLe(M, t + 1, cPrime, rows)) {
                 bSwitch = false;
                 l = t + 1 - r;
             }
@@ -454,7 +547,8 @@ const lpmsSingle = (matrix: Expr): Expr => {
         const nMinusParent = n > 1 ? ctx.getBParent(t, n - 1) : -1;
         const nMinusVR = n > 1 ? prep.getVR(t, n - 2) : 0;
         if (nMinusParent !== r || nMinusVR === 0) {
-            appendS(state, prep, t); Mp = state.Mp;
+            appendS(state, prep, t);
+            Mp = state.Mp;
             continue;
         }
 
@@ -462,18 +556,28 @@ const lpmsSingle = (matrix: Expr): Expr => {
         // case 4
         if (last2ParentIsRoot) {
             if (n < rows && M[t][n] > 0) {
-                appendS(state, prep, t); Mp = state.Mp; continue;
+                appendS(state, prep, t);
+                Mp = state.Mp;
+                continue;
             }
             if (phaseColEq(M, t + 1, c, rows) && phaseColLe(M, t + 2, c, rows)) {
                 if (t + 1 < alpha) skip[t + 1] = true;
-                appendS(state, prep, t); Mp = state.Mp; continue;
+                appendS(state, prep, t);
+                Mp = state.Mp;
+                continue;
             }
             const threshold = constCol(c[0] + 1, rows);
-            if (phaseColGt(M, t + 1, c, rows) || (phaseColEq(M, t + 1, c, rows) && phaseColGe(M, t + 2, threshold, rows))) {
-                appendS(state, prep, t); Mp = state.Mp; continue;
+            if (
+                phaseColGt(M, t + 1, c, rows) ||
+                (phaseColEq(M, t + 1, c, rows) && phaseColGe(M, t + 2, threshold, rows))
+            ) {
+                appendS(state, prep, t);
+                Mp = state.Mp;
+                continue;
             }
             if (phaseColLt(M, t + 1, c, rows)) {
-                appendS(state, prep, t); Mp = state.Mp;
+                appendS(state, prep, t);
+                Mp = state.Mp;
                 mSwitch = false;
                 let a = M[t][0];
                 if (phaseColLt(M, t + 1, constCol(a + 1, rows), rows) && ctx.getBParent(t, 2) === r) mSwitch = true;
@@ -495,12 +599,14 @@ const lpmsSingle = (matrix: Expr): Expr => {
                 d = xy.X.length + 1;
             } else {
                 const adjusted = findAdjustedD(ctx, t, d);
-                d = (xy.uMissing && adjusted === d) ? xy.X.length + 1 : adjusted;
+                d = xy.uMissing && adjusted === d ? xy.X.length + 1 : adjusted;
             }
         }
 
         if (d === 1) {
-            appendS(state, prep, t); Mp = state.Mp; continue;
+            appendS(state, prep, t);
+            Mp = state.Mp;
+            continue;
         }
 
         if (phaseColLt(M, t + d - 1, c, rows)) {
@@ -509,11 +615,12 @@ const lpmsSingle = (matrix: Expr): Expr => {
             let a = M[t][0];
             if (kp === 2 && phaseColLt(M, t + d - 1, constCol(a + 1, rows), rows)) mSwitch = true;
             if (t !== r + l) {
-                appendS(state, prep, t); Mp = state.Mp;
+                appendS(state, prep, t);
+                Mp = state.Mp;
                 if (Mp.length) for (let rr = k; rr < rows; rr++) Mp[Mp.length - 1][rr] = 0;
                 Mp = upmsSingle(Mp, l, rows);
             }
-            a = l > 0 && Mp.length >= l ? Mp[Mp.length - l][0] : (Mp.length ? Mp[Mp.length - 1][0] : 0);
+            a = l > 0 && Mp.length >= l ? Mp[Mp.length - l][0] : Mp.length ? Mp[Mp.length - 1][0] : 0;
             if (mSwitch) Mp.push(constCol(a + 1, rows));
             for (let rr = k - 1; rr <= n - 2 && rr < rows; rr++) markDescent(t, rr);
             continue;
@@ -521,7 +628,8 @@ const lpmsSingle = (matrix: Expr): Expr => {
 
         if (n === 3 && phaseColEq(M, t + d - 1, c, rows) && phaseColLt(M, t + d, c, rows)) {
             markSkipRange(skip, t + 1, t + d - 1, alpha);
-            appendS(state, prep, t); Mp = state.Mp;
+            appendS(state, prep, t);
+            Mp = state.Mp;
             mSwitch = false;
             let a = M[t][0];
             if (phaseColLt(M, t + d, constCol(a + 1, rows), rows)) mSwitch = true;
@@ -539,7 +647,8 @@ const lpmsSingle = (matrix: Expr): Expr => {
         if (n > 3 && phaseColEq(M, t + d - 1, c, rows) && phaseColLt(M, t + d, constCol(c[0] + 1, rows), rows)) {
             if (t + d - 1 < alpha) skip[t + d - 1] = true;
         }
-        appendS(state, prep, t); Mp = state.Mp;
+        appendS(state, prep, t);
+        Mp = state.Mp;
     }
 
     if (bSwitch) l = ctx.cols - r - 1;
@@ -547,7 +656,7 @@ const lpmsSingle = (matrix: Expr): Expr => {
     if (last2ParentIsRoot) {
         const take = Math.min(l, prep.B2.length);
         for (let i = 0; i < take; i++) Mp.push(prep.B2[i].slice());
-        const a = prep.B2.length ? prep.B2[0][0] : (Mp.length ? Mp[Mp.length - 1][0] : 0);
+        const a = prep.B2.length ? prep.B2[0][0] : Mp.length ? Mp[Mp.length - 1][0] : 0;
         Mp.push(constCol(a + 1, rows));
     } else {
         const blen = ctx.cols - r - 1;
@@ -582,7 +691,8 @@ const lpmsFS = (() => {
     };
 })();
 
-const lpmsLimit = (expr: Expr): boolean => pseudoInfinity(expr) || (legal(expr) && !lastAllZero(standardize(expr, maxRows(expr))));
+const lpmsLimit = (expr: Expr): boolean =>
+    pseudoInfinity(expr) || (legal(expr) && !lastAllZero(standardize(expr, maxRows(expr))));
 
 export const LPMS: NotationDefinition<Expr> = {
     id: 'lpms',

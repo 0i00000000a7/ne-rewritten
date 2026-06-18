@@ -1,6 +1,6 @@
 import { deepcopy, lex_compare, NotationDefinition, number_compare } from '@/utils.ts';
-import { MN_FS_variants } from "@/notations/FS_util.ts";
-import { is_limit } from "@/notations/Y/Omega_Y.ts";
+import { MN_FS_variants } from '@/notations/FS_util.ts';
+import { is_limit } from '@/notations/Y/Omega_Y.ts';
 
 const data = new Map<string, Expr>();
 const data_shorter = new Map<string, Expr>();

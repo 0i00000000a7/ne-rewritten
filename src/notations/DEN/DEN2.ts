@@ -1,13 +1,7 @@
 import type { DiagramControl, NotationDefinition } from '@/utils.ts';
-import {
-    deepcopy,
-    index_of_first,
-    index_of_last,
-    lex_compare,
-    number_compare,
-} from '@/utils.ts';
+import { deepcopy, index_of_first, index_of_last, lex_compare, number_compare } from '@/utils.ts';
 import type { Diagram, Rgba } from '@/core/diagram_types.ts';
-import { sequence_FS_variants } from "@/notations/FS_util.ts";
+import { sequence_FS_variants } from '@/notations/FS_util.ts';
 
 type Expr = Row[];
 type Row = [number, Entry[]];

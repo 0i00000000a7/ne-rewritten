@@ -47,10 +47,12 @@ export function import_analysis<T>(
     entries: AnalysisEntry<T>[],
     notation: NotationDefinition<T>,
     variant: string,
+    max_find_fs: number = 100,
 ): TreeNode<T>[] {
     const matched: TreeNode<T>[] = [];
     let node = last_descendant(root);
     let index = 0;
+    let fs_count = 0;
 
     while (index < entries.length) {
         const cmp = notation.compare(node.expr, entries[index].expr);
@@ -62,13 +64,21 @@ export function import_analysis<T>(
             ed.analysis.push(...entries[index].analysis);
             matched.push(node);
             index++;
+            fs_count = 0;
         } else if (cmp > 0) {
+            if (fs_count >= max_find_fs) {
+                index++;
+                fs_count = 0;
+                continue;
+            }
             const created = expand_item(node, notation, variant);
             if (!created) {
                 index++;
+                fs_count = 0;
                 continue;
             }
             node = created;
+            fs_count++;
         } else {
             const prev = find_prev(node, 0);
             if (!prev) {

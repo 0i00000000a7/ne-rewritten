@@ -139,7 +139,7 @@ function on_keydown(e: KeyboardEvent) {
     } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
         e.preventDefault();
         ed.hide_child = !ed.hide_child;
-    } else if (e.key === 'Delete') {
+    } else if (e.key === 'Delete' && settings.use_delete_to_clear) {
         e.preventDefault();
         ed.analysis![0] = undefined as unknown as string;
     }

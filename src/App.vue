@@ -77,9 +77,40 @@ const tier_name = computed(() => {
 
 const file_input = ref<HTMLInputElement>();
 
+const ANALYSIS_STORAGE_PREFIX = 'ne-analysis-';
+let auto_save_timer: ReturnType<typeof setInterval> | null = null;
+
+function save_analysis() {
+    const n = notation.value;
+    const r = root.value;
+    if (!n || !r) return;
+    const entries = export_analysis(r);
+    localStorage.setItem(ANALYSIS_STORAGE_PREFIX + n.id, JSON.stringify(entries));
+}
+
+function load_analysis(id: string, r: TreeNode<unknown>) {
+    const n = get_notation(id);
+    if (!n) return;
+    const raw = localStorage.getItem(ANALYSIS_STORAGE_PREFIX + id);
+    if (!raw) return;
+    try {
+        const entries: any[] = JSON.parse(raw);
+        import_analysis(r, entries, n as any, settings.variant, settings.max_find_fs);
+    } catch { /* ignore corrupt data */ }
+}
+
+watch(root, (r, old) => {
+    if (r && r !== old) load_analysis(current_id.value, r);
+});
+watch(() => settings.current_notation_id, () => {
+    const r = root.value;
+    if (r) load_analysis(current_id.value, r);
+});
+
 function handle_reset() {
     const n = notation.value;
     if (!n || !confirm('Reset this notation? All expanded data will be lost.')) return;
+    localStorage.removeItem(ANALYSIS_STORAGE_PREFIX + n.id);
     const root: TreeNode<unknown> = reactive(init_dataset(n));
     trees.set(n.id, root);
 }
@@ -118,7 +149,7 @@ async function on_file_selected(e: Event) {
 
     const buf = await file.arrayBuffer();
     const entries = await import_from_xlsx(buf, disp_spec.from_display);
-    const matched = import_analysis(r, entries, n as any, settings.variant);
+    const matched = import_analysis(r, entries, n as any, settings.variant, settings.max_find_fs);
     if (matched.length > 0) {
         const last = matched[matched.length - 1];
         const ed = (last.extraData ??= {}) as any;
@@ -142,7 +173,7 @@ function handle_find() {
     if (!disp_spec.from_display) return;
     try {
         const expr = disp_spec.from_display(val);
-        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, settings.variant);
+        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, settings.variant, settings.max_find_fs);
         if (matched.length > 0) {
             focus_node_input(matched[0] as any);
         }
@@ -175,8 +206,16 @@ function on_global_keydown(e: KeyboardEvent) {
     }
 }
 
-onMounted(() => document.addEventListener('keydown', on_global_keydown));
-onUnmounted(() => document.removeEventListener('keydown', on_global_keydown));
+onMounted(() => {
+    document.addEventListener('keydown', on_global_keydown);
+    auto_save_timer = setInterval(save_analysis, 30000);
+    window.addEventListener('beforeunload', save_analysis);
+});
+onUnmounted(() => {
+    document.removeEventListener('keydown', on_global_keydown);
+    if (auto_save_timer !== null) clearInterval(auto_save_timer);
+    window.removeEventListener('beforeunload', save_analysis);
+});
 </script>
 
 <template>
@@ -220,6 +259,16 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown));
                         Navigate to:
                         <input ref="find_input" type="text" @keydown="on_find_keydown" />
                         <button @mousedown.prevent="handle_find">Find</button>
+                    </label>
+                    <label>
+                        max FS:
+                        <input
+                            type="number"
+                            min="1"
+                            max="9999"
+                            v-model.number="settings.max_find_fs"
+                            style="width: 60px; vertical-align: middle"
+                        />
                     </label>
                 </div>
                 <div class="toolbar-row">
@@ -309,6 +358,10 @@ onUnmounted(() => document.removeEventListener('keydown', on_global_keydown));
                             {{ settings.show_input ? 'show' : 'hide' }}
                         </button>
                     </span>
+                    <label>
+                        <input type="checkbox" v-model="settings.use_delete_to_clear" />
+                        Use 'Delete' key to clear analysis
+                    </label>
                     <label v-if="settings.show_input">
                         Input width:
                         <input

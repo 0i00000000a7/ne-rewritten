@@ -17,7 +17,7 @@ import { LMN } from '@/notations/OCN/LMN.ts';
 import { LON } from '@/notations/OCN/LON.ts';
 import { UPMS } from '@/notations/BM-like/UPMS.ts';
 import { LPMS } from '@/notations/BM-like/LPMS.ts';
-import { register_notation } from '@/core/registry';
+import { list_notations, register_notation } from '@/core/registry';
 import { DEFAULT_SETTINGS, Settings } from '@/core/settings';
 import { SETTINGS_KEY } from '@/composables/use_settings.ts';
 import { A_omega2_MN2, wA_omega2_MN2 } from '@/notations/MN/Aw2MN2.ts';
@@ -35,6 +35,7 @@ import { aSAN2 } from '@/notations/aSAN/aSAN2.ts';
 import { aSAN3 } from '@/notations/aSAN/aSAN3.ts';
 import { aSAN_tilde3plus } from '@/notations/aSAN/aSAN_tilde3plus.ts';
 import { n_MN } from '@/notations/SMN/n_MN.ts';
+import { SA_omega2_MN } from '@/notations/SMN/SA_omega2_MN.ts';
 
 register_notation(omega);
 register_notation(BM4);
@@ -53,6 +54,7 @@ register_notation(A_omega2_MN2);
 register_notation(wA_omega2_MN2);
 register_notation(A_omega2_MN3);
 register_notation(wA_omega2_MN3);
+register_notation(SA_omega2_MN);
 register_notation(BHM);
 register_notation(BSM);
 register_notation(DEN);
@@ -77,9 +79,9 @@ register_notation(aSAN3);
 register_notation(aSAN_tilde3plus);
 
 window.notations ??= {};
-window.notations.Omega = omega;
-window.notations.BM4 = BM4;
-window.notations.TBM = TBM;
+for (let notation of list_notations()) {
+    window.notations[notation.id] = notation;
+}
 
 const SETTINGS_KEY_NAME = 'ne-settings';
 

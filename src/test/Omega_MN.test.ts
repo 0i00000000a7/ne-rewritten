@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-    column_verticals,
-    copy_column,
-    extend,
-    magma_indices,
-    Mountain,
-    parent,
-    subtract_1,
-} from '@/notations/SMN/n_MN.ts';
+import { extend, Mountain } from '@/notations/SMN/n_MN.ts';
 
 describe('omega MN', () => {
     it('0 ,1', () => {

@@ -104,6 +104,8 @@ export interface NotationDefinition<T> {
     FS_short?: (a: T, index: number) => T;
     draw_diagram?: DiagramControl<T, any>;
     init: () => T[];
+
+    debug?: any;
 }
 
 export type DiagramAction = {

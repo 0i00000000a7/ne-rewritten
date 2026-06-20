@@ -36,6 +36,8 @@ import { aSAN3 } from '@/notations/aSAN/aSAN3.ts';
 import { aSAN_tilde3plus } from '@/notations/aSAN/aSAN_tilde3plus.ts';
 import { n_MN } from '@/notations/SMN/n_MN.ts';
 import { SA_omega2_MN } from '@/notations/SMN/SA_omega2_MN.ts';
+import { S_omega2_MN } from '@/notations/SMN/S_omega2_MN.ts';
+import { S_omega_pow_omega_MN } from '@/notations/SMN/S_omega_pow_omega_MN.ts';
 
 register_notation(omega);
 register_notation(BM4);
@@ -55,6 +57,8 @@ register_notation(wA_omega2_MN2);
 register_notation(A_omega2_MN3);
 register_notation(wA_omega2_MN3);
 register_notation(SA_omega2_MN);
+register_notation(S_omega2_MN);
+register_notation(S_omega_pow_omega_MN);
 register_notation(BHM);
 register_notation(BSM);
 register_notation(DEN);

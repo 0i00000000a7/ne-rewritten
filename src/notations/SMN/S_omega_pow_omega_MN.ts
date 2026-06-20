@@ -1,7 +1,6 @@
 import {
     anti_lex_compare,
     boolean_compare,
-    compare_ignore,
     deepcopy,
     lex_compare,
     NotationDefinition,
@@ -12,7 +11,7 @@ import { MN_FS_variants } from '@/notations/FS_util.ts';
 
 export type Sep = number[];
 export type Vertical = Sep[];
-export type Entry = [number, Sep, boolean];
+export type Entry = [number, Sep];
 export type Column = Entry[];
 export type Mountain = Column[];
 
@@ -40,12 +39,13 @@ function column_display(c: Column): string {
     return '(' + c.map(entry_display).join('') + ')';
 }
 
-function entry_display([v, sep, mark]: Entry): string {
-    return sep_display(sep) + (mark ? '*' : '') + v;
+function entry_display([v, sep]: Entry): string {
+    return sep_display(sep) + v;
 }
 
 function sep_display(sep: Sep): string {
-    return ';'.repeat(sep[1]) + ','.repeat(sep[0]);
+    if (sep.length <= 2) return ';'.repeat(sep[1]) + ','.repeat(sep[0]);
+    return '[' + deepcopy(sep).reverse().join(',') + ']';
 }
 
 function from_display(str: string): Mountain {
@@ -73,13 +73,11 @@ function from_display(str: string): Mountain {
             while (i < str.length && str[i] !== ')') {
                 const [sep, nextI] = parseSimpleSep(i);
                 i = nextI;
-                let mark = i < str.length && str[i] === '*';
-                if (mark) i++;
                 let valueStart = i;
                 while (i < str.length && str[i] >= '0' && str[i] <= '9') i++;
                 const valueStr = str.substring(valueStart, i);
                 if (valueStr === '') throw new Error('illegal input string: ' + str);
-                col.push([parseInt(valueStr), sep, mark]);
+                col.push([parseInt(valueStr), sep]);
             }
             Mountain.push(col);
             if (i === str.length || str[i] !== ')') throw new Error('illegal input string: ' + str);
@@ -102,7 +100,7 @@ function vertical_compare(v1: Vertical, v2: Vertical): number {
 }
 
 function entry_compare(e1: Entry, e2: Entry): number {
-    return tuple_lex_compare(e1, e2, [number_compare, sep_compare, compare_ignore]);
+    return tuple_lex_compare(e1, e2, [number_compare, sep_compare]);
 }
 
 function column_compare(c1: Column, c2: Column): number {
@@ -233,12 +231,20 @@ export function magma_indices(m: Mountain, V: Vertical[][], [Ri, Rj]: Position, 
     return result;
 }
 
-function S(c: Column, j: number): Sep {
-    if (j > c.length) return S(c, j - 1);
-    if (j < 0) return [];
-    if (c[j][1][1]) return [];
-    if (c[j][2]) return c[j][1];
-    return S(c, j - 1);
+function S_default(bound: Sep): Sep {
+    let result = deepcopy(bound);
+    result[sep_dimension(bound)]--;
+    while (result.length > 0 && result[result.length - 1] === 0) result.pop();
+    return result;
+}
+
+function S(c: Column, j: number, bound: Sep): Sep {
+    if (j > c.length) return S(c, j - 1, bound);
+    if (j < 0) return S_default(bound);
+    if (sep_compare(c[j][1], bound) >= 0) return S_default(bound);
+    let current = c[j][1];
+    let previous = S(c, j - 1, bound);
+    return sep_compare(current, previous) < 0 ? previous : current;
 }
 
 type StretchData = {
@@ -252,12 +258,14 @@ export function stretch_data_top(m: Mountain, V: Vertical[][]): StretchData | un
     const top: number = m[right].length - 1;
     const [Ri, Rj] = parent(m, V, [right, top]);
 
-    if (m[right][top][1][0] === 0) {
-        const threshold = S(m[Ri], Rj - 1);
-        let stretch_to = S(m[right], top - 1);
+    let top_right_sep = m[right][top][1];
+
+    if (sep_dimension(top_right_sep) > 0) {
+        const threshold = S(m[Ri], Rj - 1, top_right_sep);
+        let stretch_to = S(m[right], top - 1, top_right_sep);
         let force = false;
         if (sep_compare(stretch_to, threshold) <= 0) {
-            stretch_to = sep_increase(stretch_to, 0);
+            stretch_to = sep_increase(stretch_to, sep_dimension(top_right_sep) - 1);
             force = true;
         }
         return { threshold, stretch_to, force };
@@ -275,11 +283,12 @@ export function stretch_data_list(m: Mountain, V: Vertical[][], MI: number[][]):
     let ref_j = -1;
     for (let j = 0; j < Rj; j++) {
         while (ref_j + 1 <= top && MI[right][ref_j + 1] <= j) ref_j++;
-        if (m[Ri][j][1][0] !== 0) {
+        let current_top_sep = m[Ri][j][1];
+        if (sep_dimension(current_top_sep) === 0) {
             result[j] = undefined;
         } else {
-            const threshold = S(m[Ri], j - 1);
-            const stretch_to = S(m[right], ref_j - 1);
+            const threshold = S(m[Ri], j - 1, current_top_sep);
+            const stretch_to = S(m[right], ref_j - 1, current_top_sep);
             result[j] = { threshold, stretch_to, force: false };
         }
     }
@@ -309,11 +318,11 @@ export function subtract_1(m: Mountain, V?: Vertical[][], SD_top?: StretchData):
         const v_parent = Rj === 0 ? [] : V[Ri][Rj - 1];
         const v_bottom = top === 0 ? [] : V[right][top - 1];
         if (vertical_compare(vertical_increase(v_parent, new_sep), v_bottom) > 0) {
-            result[right].push([Ri + 1, new_sep, top_right_sep[0] === 0]);
+            result[right].push([Ri + 1, new_sep]);
         }
     } else if (SD_top!.force) {
         const new_sep = SD_top!.stretch_to;
-        result[right].push([Ri + 1, new_sep, true]);
+        result[right].push([Ri + 1, new_sep]);
     }
 
     for (let j = Rj; j < m[Ri].length; j++) {
@@ -351,7 +360,7 @@ export function copy_column(
         if (j >= MI0i.length) {
             result.push(deepcopy(m0i[j]));
         } else {
-            const [value, sep, mark] = m0i[j];
+            const [value, sep] = m0i[j];
             const new_value = value + offset;
             let current_mi = MI0i[j];
             if (current_mi !== last_mi) {
@@ -360,14 +369,14 @@ export function copy_column(
                     const is_row_lifting =
                         current_mi === Rj || (ref_j + 1 < MIr.length && MIr[ref_j + 1] === current_mi);
                     if (is_row_lifting) {
-                        let [_, ref_sep, ref_mark] = mr[ref_j];
-                        result.push([new_value, ref_sep, ref_mark]);
+                        let [_, ref_sep] = mr[ref_j];
+                        result.push([new_value, ref_sep]);
                     }
                     ref_j++;
                 }
             }
             const new_sep = vertical_compare(V0i[j], stretch_v_max) > 0 ? sep : compute_stretch(sep, SD[current_mi]);
-            result.push([new_value, new_sep, mark]);
+            result.push([new_value, new_sep]);
         }
     }
     return result;
@@ -394,7 +403,7 @@ export function extend(m0: Mountain): Mountain {
 }
 
 export function Limit(index: number): Mountain {
-    return [[], [[1, [index, 1], false]]];
+    return [[], [[1, [...Array.from({ length: index }, () => 0), 1]]]];
 }
 
 export function expand(m: Mountain, index: number, shorter: boolean = false): Mountain {
@@ -471,10 +480,10 @@ function convert_from_layer(dm: Mountain): Mountain {
     return om;
 }
 
-export const SA_omega2_MN: NotationDefinition<Mountain> = {
-    id: 'SA-omega2-MN',
-    name: "Smile's Astral ω2 MN",
-    simple_name: 'SAω2MN',
+export const S_omega_pow_omega_MN: NotationDefinition<Mountain> = {
+    id: 'S-omega^omega-MN',
+    name: "Smile's ω^ω MN",
+    simple_name: 'Sω^ωMN',
     display: { plain: display, from_display: from_display },
     display_equiv: {
         layer: {

@@ -1,4 +1,6 @@
-import { lex_compare, type NotationDefinition, number_compare } from '@/utils.ts';
+import { type DiagramControl, lex_compare, type NotationDefinition, number_compare } from '@/utils.ts';
+import type { Diagram, Rgba } from '@/core/diagram_types';
+import { Y_FS_variants } from '@/notations/FS_util.ts';
 
 /** Bashicu 矩阵表达式：number[][]，其中 [[Infinity]] 表示极限。 */
 export type Expr = number[][];
@@ -6,6 +8,10 @@ export type Expr = number[][];
 /** 判断表达式是否表示极限（[[Infinity]]）。 */
 export function is_infinite(a: Expr): boolean {
     return ('' + a).startsWith('Infinity');
+}
+
+export function is_limit(a: Expr): boolean {
+    return a.length > 0 && a[a.length - 1].length > 0;
 }
 
 /** 矩阵比较：先处理 Infinity，再按字典序逐列比较。 */
@@ -190,26 +196,155 @@ function expand(m: Expr, index: number): Expr {
     return result;
 }
 
+function Limit(n: number): Expr {
+    return [[], Array.from({ length: n + 1 }, () => 1)];
+}
+
+/** 基础数列展开缓存。 */
+const data: Record<string, Expr[]> = {};
+
+/**
+ * 计算山脉图数值矩阵。
+ * mountain[i][j] = up + left，其中 up 是上一行的值，left 是父节点的值。
+ * 底部行 (j=0) 即为 0Y 序列。
+ * 值为 0 的 BM 行已被省略，绘制山脉图时补充完整。
+ */
+function compute_mountain(m: Expr): { M: number[][]; P: number[][] } {
+    const P = parents(m);
+    const h = Math.max(...m.map((col) => col.length));
+    const diagram_rows = h + 1;
+    const M: number[][] = [];
+    for (let i = 0; i < m.length; i++) {
+        M.push([]);
+        for (let j = diagram_rows - 1; j >= 0; j--) {
+            if (j >= P[i].length || P[i][j] < 0) {
+                M[i][j] = 1;
+            } else {
+                const up = M[i][j + 1] ?? 1;
+                const left = M[P[i][j]][j] ?? 1;
+                M[i][j] = up + left;
+            }
+        }
+    }
+    return { M, P };
+}
+
 /**
  * 将 Bashicu 矩阵转换为 0-Y 数列。
  * 用于显示等价表示。
  */
 export function convert_to_0Y(m: Expr): number[] {
-    const P = parents(m);
-    const mountain: number[][] = [];
-    for (let i = 0; i < m.length; i++) {
-        mountain.push([]);
-        for (let j = P[i].length - 1; j >= 0; j--) {
-            const up = mountain[i][j + 1] ?? 1;
-            const left = mountain[P[i][j]][j] ?? 1;
-            mountain[i][j] = up + left;
-        }
-    }
-    return mountain.map((col) => col[0] ?? 1);
+    return compute_mountain(m).M.map((col) => col[0]);
 }
 
-/** 基础数列展开缓存。 */
-const data: Record<string, Expr[]> = {};
+export function display_0Y(m: Expr): string {
+    return is_infinite(m) ? '1,ω' : convert_to_0Y(m).join(',');
+}
+
+export function compute_0Y_mountain(seq: number[]): { M: number[][]; P: number[][]; m: Expr } {
+    const P: number[][] = Array.from({ length: seq.length }, () => []);
+    const M: number[][] = Array.from({ length: seq.length }, (_, i) => [seq[i]]);
+    const m: Expr = Array.from({ length: seq.length }, (_) => []);
+
+    for (let j = 0; ; j++) {
+        let has_next = false;
+        for (let i = 0; i < seq.length; i++) {
+            if (M[i][j] === 1) {
+                M[i].push(1);
+            } else {
+                let p = j === 0 ? i - 1 : P[i][j - 1];
+                while (p >= 0) {
+                    if (M[i][j] > M[p][j]) break;
+                    p = j === 0 ? p - 1 : P[p][j - 1];
+                }
+                if (p >= 0) {
+                    P[i].push(p);
+                    M[i].push(M[i][j] - M[p][j]);
+                    m[i].push((m[p][j] ?? 0) + 1);
+                    has_next = true;
+                } else {
+                    throw new Error('Illegal 0Y sequence: ' + seq);
+                }
+            }
+        }
+        if (!has_next) break;
+    }
+    return { M, P, m };
+}
+
+export function from_display_0Y(str: string): Expr {
+    if (str === 'Limit' || str === '1,ω' || str === '1,w') return [[Infinity]];
+    const result = str.split(',').map((s) => parseInt(s.trim(), 10));
+    if (result.find(Number.isNaN) !== undefined) throw new Error('Illegal omega-Y sequence');
+    return compute_0Y_mountain(result).m;
+}
+
+const draw_diagram_control: DiagramControl<Expr, Record<string, never>> = {
+    default_data: {} as Record<string, never>,
+    draw_diagram: (m: Expr, _data: Record<string, never>): Diagram | undefined => {
+        if (is_infinite(m) || m.length === 0) return undefined;
+        const { M, P: P } = compute_mountain(m);
+        const A = 30;
+        const rows = Math.max(...M.map((col) => col.length));
+        const cols = M.length;
+        const width = (cols + 1) * A;
+        const height = (rows + 1) * A;
+        const elements: Diagram['elements'] = [];
+        const lines: Diagram['elements'] = [];
+        const extra_text: Diagram['extra_text'] = [];
+        const black: Rgba = { r: 0, g: 0, b: 0 };
+        const off = 5; // port offset from node center
+
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < M[i].length; j++) {
+                const cx = i * A + A;
+                const cy = (rows - j) * A;
+                const val = M[i][j];
+
+                // fold line: up from (i,j) then left-down to parent
+                if (j < P[i].length && P[i][j] >= 0 && j + 1 < M[i].length) {
+                    const up_cy = (rows - j - 1) * A;
+                    const p_cx = P[i][j] * A + A;
+                    // vertical: top port of (i,j) → bottom port of (i,j+1)
+                    lines.push({
+                        type: 'line',
+                        x1: cx,
+                        y1: cy - off,
+                        x2: cx,
+                        y2: up_cy + off,
+                        stroke: true,
+                        stroke_color: black,
+                        width: 1,
+                    });
+                    // diagonal: bottom port of (i,j+1) → top port of (P[i][j], j)
+                    lines.push({
+                        type: 'line',
+                        x1: cx,
+                        y1: up_cy + off,
+                        x2: p_cx,
+                        y2: cy - off,
+                        stroke: true,
+                        stroke_color: black,
+                        width: 1,
+                    });
+                }
+
+                // value text (no circle)
+                extra_text.push({
+                    text: '' + val,
+                    x: cx,
+                    y: cy,
+                    size: 10,
+                    color: black,
+                    align: 'center',
+                });
+            }
+        }
+
+        elements.unshift(...lines);
+        return { width, height, elements, extra_text };
+    },
+};
 
 export const BM4: NotationDefinition<Expr> = {
     id: 'bm4',
@@ -217,21 +352,18 @@ export const BM4: NotationDefinition<Expr> = {
     simple_name: 'BMS',
     display: { plain: display, from_display },
     display_equiv: {
-        '0Y': (m) => (is_infinite(m) ? '1,ω' : '' + convert_to_0Y(m)),
+        '0Y': {
+            plain: display_0Y,
+            from_display: from_display_0Y,
+        },
     },
     is_limit: matrix_is_limit,
     compare,
+    draw_diagram: draw_diagram_control,
 
-    FS: (m, index) => {
-        if (is_infinite(m)) return [[], Array(index + 1).fill(1)];
-        if (m.length === 0) return [];
-
-        const data_key = display(m);
-        if (!data[data_key]) data[data_key] = [];
-        else if (data[data_key][index] !== undefined) return data[data_key][index];
-
-        return (data[data_key][index] = expand(m, index));
-    },
+    ...Y_FS_variants(expand, is_infinite, Limit, is_limit, display),
 
     init: () => [[[Infinity]], []],
+
+    debug: { compute_0Y_mountain },
 };

@@ -35,6 +35,7 @@ export type Element =
           fill: boolean;
           fill_color?: Rgba;
           size?: number;
+          align?: 'left' | 'center' | 'right';
       };
 
 export interface ExtraText {
@@ -43,6 +44,7 @@ export interface ExtraText {
     y: number;
     size?: number;
     color?: Rgba;
+    align?: 'left' | 'center' | 'right';
 }
 
 export interface Diagram {

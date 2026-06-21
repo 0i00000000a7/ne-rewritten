@@ -39,7 +39,7 @@ function draw() {
         } else if (el.type === 'text') {
             ctx.fillStyle = el.fill_color ? css(el.fill_color) : '#000';
             ctx.font = (el.size ?? 14) + 'px monospace';
-            ctx.textAlign = 'left';
+            ctx.textAlign = el.align ?? 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(el.text, el.x, el.y);
         }
@@ -50,7 +50,7 @@ watch(() => props.diagram, draw, { deep: true });
 onMounted(draw);
 
 function extra_style(t: Diagram['extra_text'][number]) {
-    return {
+    const style: Record<string, string> = {
         position: 'absolute' as const,
         left: t.x + 'px',
         top: t.y + 'px',
@@ -61,6 +61,14 @@ function extra_style(t: Diagram['extra_text'][number]) {
         whiteSpace: 'pre' as const,
         pointerEvents: 'none' as const,
     };
+    if (t.align === 'center') {
+        style.transform = 'translateX(-50%)';
+        style.textAlign = 'center';
+    } else if (t.align === 'right') {
+        style.transform = 'translateX(-100%)';
+        style.textAlign = 'right';
+    }
+    return style;
 }
 </script>
 

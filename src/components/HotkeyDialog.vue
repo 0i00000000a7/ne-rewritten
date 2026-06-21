@@ -31,7 +31,9 @@ const input_hotkeys = [
             <div class="hotkey-section-title">Global</div>
             <table class="hotkey-table">
                 <tr v-for="hk in global_hotkeys" :key="hk.keys">
-                    <td class="hotkey-keys"><kbd>{{ hk.keys }}</kbd></td>
+                    <td class="hotkey-keys">
+                        <kbd>{{ hk.keys }}</kbd>
+                    </td>
                     <td class="hotkey-desc">{{ hk.desc }}</td>
                 </tr>
             </table>
@@ -40,7 +42,9 @@ const input_hotkeys = [
             <div class="hotkey-section-title">Input focus</div>
             <table class="hotkey-table">
                 <tr v-for="hk in input_hotkeys" :key="hk.keys">
-                    <td class="hotkey-keys"><kbd>{{ hk.keys }}</kbd></td>
+                    <td class="hotkey-keys">
+                        <kbd>{{ hk.keys }}</kbd>
+                    </td>
                     <td class="hotkey-desc">{{ hk.desc }}</td>
                 </tr>
             </table>

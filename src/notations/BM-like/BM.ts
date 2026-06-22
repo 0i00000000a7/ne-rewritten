@@ -201,7 +201,11 @@ function Limit(n: number): Expr {
 }
 
 /** 基础数列展开缓存。 */
-const data: Record<string, Expr[]> = {};
+interface MountainData {
+    m: Expr;
+    M: number[][];
+    P: number[][];
+}
 
 /**
  * 计算山脉图数值矩阵。
@@ -209,7 +213,7 @@ const data: Record<string, Expr[]> = {};
  * 底部行 (j=0) 即为 0Y 序列。
  * 值为 0 的 BM 行已被省略，绘制山脉图时补充完整。
  */
-function compute_mountain(m: Expr): { M: number[][]; P: number[][] } {
+function compute_mountain(m: Expr): MountainData {
     const P = parents(m);
     const h = Math.max(...m.map((col) => col.length));
     const diagram_rows = h + 1;
@@ -226,7 +230,7 @@ function compute_mountain(m: Expr): { M: number[][]; P: number[][] } {
             }
         }
     }
-    return { M, P };
+    return { m, M, P };
 }
 
 /**
@@ -241,7 +245,7 @@ export function display_0Y(m: Expr): string {
     return is_infinite(m) ? '1,ω' : convert_to_0Y(m).join(',');
 }
 
-export function compute_0Y_mountain(seq: number[]): { M: number[][]; P: number[][]; m: Expr } {
+export function compute_0Y_mountain(seq: number[]): MountainData {
     const P: number[][] = Array.from({ length: seq.length }, () => []);
     const M: number[][] = Array.from({ length: seq.length }, (_, i) => [seq[i]]);
     const m: Expr = Array.from({ length: seq.length }, (_) => []);
@@ -279,11 +283,15 @@ export function from_display_0Y(str: string): Expr {
     return compute_0Y_mountain(result).m;
 }
 
-const draw_diagram_control: DiagramControl<Expr, Record<string, never>> = {
-    default_data: {} as Record<string, never>,
-    draw_diagram: (m: Expr, _data: Record<string, never>): Diagram | undefined => {
+export interface DiagramData {
+    current_equiv: '0Y' | undefined;
+}
+
+const draw_diagram_control: DiagramControl<Expr, DiagramData> = {
+    default_data: { current_equiv: undefined },
+    draw_diagram: (m: Expr, _data: DiagramData): Diagram | undefined => {
         if (is_infinite(m) || m.length === 0) return undefined;
-        const { M, P: P } = compute_mountain(m);
+        const { M, P } = compute_mountain(m);
         const A = 30;
         const rows = Math.max(...M.map((col) => col.length));
         const cols = M.length;
@@ -299,7 +307,7 @@ const draw_diagram_control: DiagramControl<Expr, Record<string, never>> = {
             for (let j = 0; j < M[i].length; j++) {
                 const cx = i * A + A;
                 const cy = (rows - j) * A;
-                const val = M[i][j];
+                const val = _data.current_equiv === '0Y' ? M[i][j] : ((m[i] ?? [])[j] ?? 0);
 
                 // fold line: up from (i,j) then left-down to parent
                 if (j < P[i].length && P[i][j] >= 0 && j + 1 < M[i].length) {

@@ -56,16 +56,18 @@ function extra_style(t: Diagram['extra_text'][number]) {
         top: t.y + 'px',
         fontSize: (t.size ?? 12) + 'px',
         color: t.color ? css(t.color) : '#000',
-        fontFamily: 'monospace',
+        fontFamily: 'inherit',
         lineHeight: '1',
         whiteSpace: 'pre' as const,
         pointerEvents: 'none' as const,
     };
-    if (t.align === 'center') {
-        style.transform = 'translateX(-50%)';
+    if (t.align === 'left') {
+        style.transform = 'translate(0,-0.3em)';
+    } else if (t.align === 'center') {
+        style.transform = 'translate(-50%,-0.3em)';
         style.textAlign = 'center';
     } else if (t.align === 'right') {
-        style.transform = 'translateX(-100%)';
+        style.transform = 'translate(-100%,-0.3em)';
         style.textAlign = 'right';
     }
     return style;

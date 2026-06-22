@@ -45,7 +45,7 @@ function entry_display([v, sep]: Entry): string {
 
 function sep_display(sep: Sep): string {
     if (sep.length <= 2) return ';'.repeat(sep[1]) + ','.repeat(sep[0]);
-    return '[' + deepcopy(sep).reverse().join(',') + ']';
+    return '[' + sep.toReversed().join(',') + ']';
 }
 
 function from_display(str: string): Mountain {

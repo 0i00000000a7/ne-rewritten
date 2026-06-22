@@ -18,10 +18,17 @@ function refresh() {
 }
 
 export function use_diagram() {
-    function show<T>(control: DiagramControl<T, any>, expr: T, x: number, y: number) {
+    function show<T>(control: DiagramControl<T, any>, expr: T, x: number, y: number, equiv?: string) {
         if (current_control !== control) {
             current_data = { ...control.default_data };
             current_control = control;
+        }
+        // 若 data 有 current_equiv 字段，则同步传入的等价变体
+        if (typeof current_data === 'object' && current_data && 'current_equiv' in current_data) {
+            const new_equiv = equiv || undefined;
+            if (current_data.current_equiv !== new_equiv) {
+                current_data = { ...current_data, current_equiv: new_equiv };
+            }
         }
         current_expr = expr;
         diagram.value = control.draw_diagram(expr, current_data) ?? null;

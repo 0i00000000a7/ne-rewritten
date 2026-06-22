@@ -130,3 +130,101 @@ export function index_of_last<T>(array: T[], predicate: (_: T) => boolean): numb
     }
     return -1;
 }
+
+/** 以 display 为键的集合，实现值语义去重。 */
+export class DisplaySet<T> {
+    private _map: Map<string, T>;
+    private readonly _display: (value: T) => string;
+
+    constructor(display: (value: T) => string, items?: T[]) {
+        this._display = display;
+        this._map = new Map();
+        if (items) {
+            for (const item of items) {
+                this.add(item);
+            }
+        }
+    }
+
+    add(value: T): this {
+        this._map.set(this._display(value), value);
+        return this;
+    }
+
+    has(value: T): boolean {
+        return this._map.has(this._display(value));
+    }
+
+    delete(value: T): boolean {
+        return this._map.delete(this._display(value));
+    }
+
+    values(): T[] {
+        return Array.from(this._map.values());
+    }
+
+    get size(): number {
+        return this._map.size;
+    }
+
+    forEach(callback: (value: T) => void): void {
+        this._map.forEach((value) => callback(value));
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        return this._map.values();
+    }
+}
+
+/** 以 display 为键的映射，实现值语义键比较。 */
+export class DisplayMap<T, V> {
+    private _map: Map<string, [T, V]>;
+    private readonly _display: (key: T) => string;
+
+    constructor(display: (key: T) => string, entries?: [T, V][]) {
+        this._display = display;
+        this._map = new Map();
+        if (entries) {
+            for (const [key, value] of entries) {
+                this.set(key, value);
+            }
+        }
+    }
+
+    set(key: T, value: V): this {
+        this._map.set(this._display(key), [key, value]);
+        return this;
+    }
+
+    get(key: T): V | undefined {
+        return this._map.get(this._display(key))?.[1];
+    }
+
+    has(key: T): boolean {
+        return this._map.has(this._display(key));
+    }
+
+    delete(key: T): boolean {
+        return this._map.delete(this._display(key));
+    }
+
+    entries(): [T, V][] {
+        return Array.from(this._map.values());
+    }
+
+    values(): V[] {
+        return Array.from(this._map.values()).map(([, v]) => v);
+    }
+
+    keys(): T[] {
+        return Array.from(this._map.values()).map(([k]) => k);
+    }
+
+    get size(): number {
+        return this._map.size;
+    }
+
+    forEach(callback: (value: V, key: T) => void): void {
+        this._map.forEach(([k, v]) => callback(v, k));
+    }
+}

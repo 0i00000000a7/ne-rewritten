@@ -14,7 +14,15 @@ import DiagramViewer from '@/components/DiagramViewer.vue';
 import HotkeyDialog from '@/components/HotkeyDialog.vue';
 
 const settings = inject(SETTINGS_KEY)!;
-const { diagram, visible, pos_x, pos_y, hide } = use_diagram();
+const {
+    diagram,
+    visible,
+    pos_x,
+    pos_y,
+    show: show_diagram,
+    hide,
+    dispatch_action: dispatch_diagram_action,
+} = use_diagram();
 const settings_collapsed = ref(true);
 const is_flashing = ref(false);
 const flash_show_simple = ref(false);
@@ -199,10 +207,56 @@ function handle_find() {
     } catch (_) {}
 }
 
+function on_find_input() {
+    const n = notation.value;
+    const val = find_input.value?.value;
+    if (!n || !val) {
+        hide();
+        return;
+    }
+    const dc = n.draw_diagram;
+    if (!dc) return;
+    const equiv_name = settings.equiv_active[n.id];
+    const disp_spec =
+        equiv_name && n.display_equiv?.[equiv_name]
+            ? resolve_display(n.display_equiv[equiv_name])
+            : resolve_display(n.display);
+    if (!disp_spec.from_display) return;
+    try {
+        const expr = disp_spec.from_display(val);
+        const el = find_input.value;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        show_diagram(dc, expr, r.left, 60 + r.height, equiv_name ?? undefined);
+    } catch {
+        hide();
+    }
+}
+
+function on_find_focus(e: FocusEvent) {
+    const el = e.target as HTMLInputElement;
+    const r = el.getBoundingClientRect();
+    const target_scroll = r.top + window.scrollY - 60;
+    window.scrollTo({ top: target_scroll, behavior: 'smooth' });
+    on_find_input();
+}
+
 function on_find_keydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
         e.preventDefault();
         handle_find();
+    } else if (e.key === 'ArrowUp' && e.ctrlKey) {
+        e.preventDefault();
+        dispatch_diagram_action({ type: 'scroll', direction: 'up', step: 1 });
+    } else if (e.key === 'ArrowDown' && e.ctrlKey) {
+        e.preventDefault();
+        dispatch_diagram_action({ type: 'scroll', direction: 'down', step: 1 });
+    } else if (e.key === 'ArrowLeft' && e.ctrlKey) {
+        e.preventDefault();
+        dispatch_diagram_action({ type: 'scroll', direction: 'left', step: 1 });
+    } else if (e.key === 'ArrowRight' && e.ctrlKey) {
+        e.preventDefault();
+        dispatch_diagram_action({ type: 'scroll', direction: 'right', step: 1 });
     }
 }
 
@@ -281,7 +335,13 @@ onUnmounted(() => {
                 <div class="toolbar-row">
                     <label>
                         Navigate to:
-                        <input ref="find_input" type="text" @keydown="on_find_keydown" />
+                        <input
+                            ref="find_input"
+                            type="text"
+                            @focus="on_find_focus"
+                            @input="on_find_input"
+                            @keydown="on_find_keydown"
+                        />
                         <button @mousedown.prevent="handle_find">Find</button>
                     </label>
                     <label>

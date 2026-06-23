@@ -77,7 +77,10 @@ function extra_style(t: Diagram['extra_text'][number]) {
 <template>
     <div class="diagram-wrapper" :style="{ position: 'relative', display: 'inline-block' }">
         <canvas ref="canvas" class="diagram-canvas" />
-        <span v-for="(t, i) in diagram.extra_text" :key="i" :style="extra_style(t)">{{ t.text }}</span>
+        <template v-for="(t, i) in diagram.extra_text" :key="i">
+            <span v-if="t.display_html" :style="extra_style(t)" v-html="t.text"></span>
+            <span v-else :style="extra_style(t)">{{ t.text }}</span>
+        </template>
     </div>
 </template>
 

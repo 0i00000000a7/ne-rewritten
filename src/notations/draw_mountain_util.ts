@@ -7,8 +7,8 @@ import type { Diagram, Rgba } from '@/core/diagram_types';
  * line_heights[] 为各水平网格线的像素距离（同样从最底行起算）。
  */
 export interface MountainDiagramData {
-    /** 各行标号（仅用于左侧显示文本），vj 即为此数组下标。 */
-    sorted_verticals: string[];
+    /** 各行标号（仅用于左侧显示文本），undefined 表示不显示该行标号，vj 即为此数组下标。 */
+    sorted_verticals: (string | undefined)[];
     /** 各水平网格线距最底行的像素距离。 */
     line_heights: number[];
     /** 各行距最底行的像素距离（heights[0] = 0）。 */
@@ -32,6 +32,8 @@ export interface MountainDiagramOptions {
     text_size?: number;
     /** 是否上下翻转。 */
     invert_vertical?: boolean;
+    /** 行标是否按 HTML 显示。 */
+    display_html_vertical?: boolean;
 }
 
 /**
@@ -39,7 +41,15 @@ export interface MountainDiagramOptions {
  * 负责：网格线、行标签、节点文字、右腿、左腿折线。
  */
 export function draw_mountain_diagram(data: MountainDiagramData, opts?: MountainDiagramOptions): Diagram | undefined {
-    const { W = 30, WV = 50, H_off = 10, padding = 10, text_size = 14, invert_vertical = false } = opts ?? {};
+    const {
+        W = 30,
+        WV = 50,
+        H_off = 10,
+        padding = 10,
+        text_size = 14,
+        invert_vertical = false,
+        display_html_vertical = false,
+    } = opts ?? {};
 
     const { sorted_verticals, heights, line_heights, entries, left_legs } = data;
     const cols = entries.length;
@@ -74,13 +84,16 @@ export function draw_mountain_diagram(data: MountainDiagramData, opts?: Mountain
 
     // 行标（左侧）
     for (let vj = 0; vj < sorted_verticals.length; vj++) {
+        const label = sorted_verticals[vj];
+        if (label === undefined) continue;
         extra_text.push({
-            text: sorted_verticals[vj],
+            text: label,
             x: WV / 2,
             y: calc_cy(vj),
             size: text_size,
             color: black,
             align: 'center',
+            ...(display_html_vertical ? { display_html: true } : {}),
         });
     }
 

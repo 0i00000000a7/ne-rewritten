@@ -1,6 +1,7 @@
-import type { NotationDefinition } from '@/utils.ts';
-import { lex_compare, number_compare } from '@/utils.ts';
+import type { DiagramControl, NotationDefinition } from '@/utils.ts';
+import { lex_compare, number_compare, DisplaySet, DisplayMap } from '@/utils.ts';
 import { Y_FS_variants } from '@/notations/FS_util.ts';
+import { draw_mountain_diagram, type MountainDiagramData } from '@/notations/draw_mountain_util.ts';
 
 type Expr = number[];
 type Vertical = number[];
@@ -494,12 +495,40 @@ function expand_strong_magma(seq: Expr, index: number) {
     return to_sequence(newMountain);
 }
 
-function to_dbms_display(seq: Expr): string {
-    type DBMS_Entry = Entry & { sep?: number; depth?: number };
-    type DBMS_Mountain = DBMS_Entry[][];
+interface DBMS_Entry {
+    value: number;
+    x: number;
+    y: Vertical;
+    left_up: DBMS_Entry[];
+    right_up?: DBMS_Entry;
+    left_down?: DBMS_Entry;
+    right_down?: DBMS_Entry;
+    sep?: number;
+    depth?: number;
+}
 
+type DBMS_Mountain = DBMS_Entry[][];
+
+function draw_dbms_mountain(m: Mountain, Asheep: boolean): DBMS_Mountain {
+    let mountain: DBMS_Mountain = m;
+
+    for (let col of mountain) {
+        for (let j = col.length - 3; j >= 0; j--) {
+            let entry = col[j];
+            if (entry.y.length === 0) continue;
+            entry.sep = dimension_difference(entry.y, entry.left_down!.y);
+            let left_entry = entry.left_down!.right_up;
+            if (Asheep && left_entry !== undefined && vertical_compare(left_entry.y, entry.y) !== 0)
+                left_entry = undefined;
+            entry.depth = 1 + (left_entry?.depth ?? 0);
+        }
+    }
+    return mountain;
+}
+
+function to_dbms_display(seq: Expr, Asheep: boolean): string {
     if ('' + seq === 'Infinity') return 'Limit';
-    let mountain: DBMS_Mountain = draw_mountain(from_sequence(seq));
+    let mountain = draw_dbms_mountain(draw_mountain(from_sequence(seq)), Asheep);
 
     let result = '';
 
@@ -507,17 +536,110 @@ function to_dbms_display(seq: Expr): string {
         result += '(';
         for (let j = col.length - 3; j >= 0; j--) {
             let entry = col[j];
-            if (entry.y.length === 0) continue;
-            entry.sep = dimension_difference(entry.y, entry.left_down!.y);
-            let parent_entry: DBMS_Entry | undefined = entry.left_down!.right_up;
-            entry.depth = 1 + (parent_entry?.depth ?? 0);
-            result += ','.repeat(entry.sep + 1) + entry.depth;
+            result += ','.repeat(entry.sep! + 1) + entry.depth;
         }
         result += ')';
     }
 
     return result;
 }
+
+function vertical_display(v: Vertical): string {
+    return v.toReversed().join(',');
+}
+
+/** 行标 HTML 显示：ω 进制序数。例如 [0,0,1] → ω², [1,3,0,4] → ω³4+ω3+1。 */
+function vertical_display_html(v: Vertical): string {
+    if (v.length === 0) return '0';
+    const parts: string[] = [];
+    for (let i = v.length - 1; i >= 0; i--) {
+        const c = v[i];
+        if (c === 0) continue;
+        if (i === 0) {
+            parts.push('' + c);
+        } else if (i === 1) {
+            parts.push(c === 1 ? 'ω' : 'ω' + c);
+        } else {
+            parts.push(c === 1 ? `ω<sup>${i}</sup>` : `ω<sup>${i}</sup>${c}`);
+        }
+    }
+    return parts.join('+');
+}
+
+interface YDiagramData {
+    current_equiv: string | undefined;
+    invert_vertical?: boolean;
+}
+
+function compute_y_mountain_diagram(seq: Expr, current_equiv: string | undefined): MountainDiagramData | undefined {
+    if (is_infinite(seq) || seq.length === 0) return undefined;
+    const mountain = draw_dbms_mountain(draw_mountain(from_sequence(seq)), current_equiv === 'ADBMS');
+
+    const vertical_set = new DisplaySet<Vertical>(vertical_display);
+    for (const col of mountain) for (const entry of col) vertical_set.add(entry.y);
+    const sorted = vertical_set.values().sort(vertical_compare);
+    const vertical_index = new DisplayMap<Vertical, number>(vertical_display);
+    for (let i = 0; i < sorted.length; i++) vertical_index.set(sorted[i], i);
+
+    const entries: (string | undefined)[][] = Array.from({ length: mountain.length }, () =>
+        Array.from({ length: sorted.length }, () => undefined),
+    );
+    const left_legs: ([number, number] | undefined)[][] = Array.from({ length: mountain.length }, () =>
+        Array.from({ length: sorted.length }, () => undefined),
+    );
+
+    for (let i = 0; i < mountain.length; i++) {
+        for (let j = 0; j < mountain[i].length - 1; j++) {
+            const entry = mountain[i][j];
+            const vj = vertical_index.get(entry.y)!;
+            if (current_equiv !== undefined) {
+                entries[i][vj - 1] = entry.sep !== undefined ? ','.repeat(entry.sep + 1) + entry.depth : '*';
+            } else {
+                entries[i][vj - 1] = '' + entry.value;
+            }
+            if (entry.left_down) {
+                const pvj = vertical_index.get(entry.left_down.y)!;
+                if (pvj !== 0) left_legs[i][vj - 1] = [entry.left_down.x, pvj - 1];
+            }
+        }
+    }
+
+    const H = 40,
+        HS = 5;
+    const heights: number[] = [0];
+    const line_heights: number[] = [];
+    for (let i = 2; i < sorted.length; i++) {
+        const sep = dimension_difference(sorted[i], sorted[i - 1]);
+        const d_height = H + HS * sep;
+        heights.push(heights[i - 2] + d_height);
+        for (let k = 0; k <= sep; k++) line_heights.push(heights[i - 2] + H / 2 + HS * k);
+    }
+
+    let vertical_names = sorted
+        .slice(1)
+        .map((v) => vertical_display_html(v.length === 1 ? (v[0] === 1 ? [] : [v[0] - 1]) : v));
+
+    return { sorted_verticals: vertical_names, heights, line_heights, entries, left_legs };
+}
+
+const y_diagram_control: DiagramControl<Expr, YDiagramData> = {
+    default_data: { current_equiv: undefined, invert_vertical: undefined },
+    draw_diagram: (seq, data) => {
+        const mountain = compute_y_mountain_diagram(seq, data.current_equiv);
+        if (!mountain) return undefined;
+        return draw_mountain_diagram(mountain, {
+            invert_vertical: data.invert_vertical ?? false,
+            display_html_vertical: true,
+        });
+    },
+    handle_action: (data, action): YDiagramData | null => {
+        if (action.type === 'scroll') {
+            if (action.direction === 'down') return { ...data, invert_vertical: true };
+            if (action.direction === 'up') return { ...data, invert_vertical: false };
+        }
+        return null;
+    },
+};
 
 function create_magma_notation(type: string, magma: (seq: Expr, index: number) => Expr): NotationDefinition<Expr> {
     return {
@@ -528,9 +650,13 @@ function create_magma_notation(type: string, magma: (seq: Expr, index: number) =
             plain: sequence_display,
             from_display: sequence_from_display,
         },
-        display_equiv: { DBMS: to_dbms_display },
+        display_equiv: {
+            DBMS: (s) => to_dbms_display(s, false),
+            ADBMS: (s) => to_dbms_display(s, true),
+        },
         is_limit,
         compare: seq_compare,
+        draw_diagram: y_diagram_control,
         ...Y_FS_variants(magma, is_infinite, (index) => [1, index + 1], is_limit, sequence_display),
         init: () => [[Infinity], [1], []],
     };

@@ -45,6 +45,7 @@ export interface ExtraText {
     size?: number;
     color?: Rgba;
     align?: 'left' | 'center' | 'right';
+    display_html?: boolean;
 }
 
 export interface Diagram {

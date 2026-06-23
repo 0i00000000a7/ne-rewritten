@@ -1,6 +1,7 @@
 import { type DiagramControl, lex_compare, type NotationDefinition, number_compare } from '@/utils.ts';
-import type { Diagram, Rgba } from '@/core/diagram_types';
+import type { Diagram } from '@/core/diagram_types';
 import { Y_FS_variants } from '@/notations/FS_util.ts';
+import { draw_mountain_diagram, type MountainDiagramData } from '@/notations/draw_mountain_util.ts';
 
 /** Bashicu 矩阵表达式：number[][]，其中 [[Infinity]] 表示极限。 */
 export type Expr = number[][];
@@ -285,72 +286,59 @@ export function from_display_0Y(str: string): Expr {
 
 export interface DiagramData {
     current_equiv: '0Y' | undefined;
+    invert_vertical?: boolean;
+}
+
+/** 计算层：将 BM 的 Expr 转为 MountainDiagramData。 */
+function compute_bm_mountain_diagram(m: Expr, current_equiv?: string): MountainDiagramData {
+    const { M, P } = compute_mountain(m);
+    const h = M[0].length - 1; // 行数 - 1
+
+    const line_height = 40;
+
+    const sorted_verticals: (string | undefined)[] = [];
+    const heights: number[] = [];
+    for (let vj = 0; vj <= h; vj++) {
+        sorted_verticals.push(undefined);
+        heights.push(vj * line_height); // 统一行高，与 MN 一致
+    }
+
+    const entries: (string | undefined)[][] = Array.from({ length: m.length }, () =>
+        Array.from({ length: h + 1 }, () => undefined),
+    );
+    const left_legs: ([number, number] | undefined)[][] = Array.from({ length: m.length }, () =>
+        Array.from({ length: h + 1 }, () => undefined),
+    );
+
+    for (let i = 0; i < m.length; i++) {
+        for (let j = 0; j <= h; j++) {
+            const val = current_equiv === '0Y' ? M[i][j] : ((m[i] ?? [])[j] ?? 0);
+            entries[i][j] = '' + val;
+        }
+        // left legs: 从上方元素 (j+1) 指向其父项
+        for (let j = 0; j < P[i].length; j++) {
+            if (P[i][j] >= 0 && j + 1 <= h) {
+                left_legs[i][j + 1] = [P[i][j], j];
+            }
+        }
+    }
+
+    return { sorted_verticals, heights, line_heights: [], entries, left_legs };
 }
 
 const draw_diagram_control: DiagramControl<Expr, DiagramData> = {
-    default_data: { current_equiv: undefined },
+    default_data: { current_equiv: undefined, invert_vertical: undefined },
     draw_diagram: (m: Expr, _data: DiagramData): Diagram | undefined => {
         if (is_infinite(m) || m.length === 0) return undefined;
-        const { M, P } = compute_mountain(m);
-        const A = 30;
-        const rows = Math.max(...M.map((col) => col.length));
-        const cols = M.length;
-        const width = (cols + 1) * A;
-        const height = (rows + 1) * A;
-        const elements: Diagram['elements'] = [];
-        const lines: Diagram['elements'] = [];
-        const extra_text: Diagram['extra_text'] = [];
-        const black: Rgba = { r: 0, g: 0, b: 0 };
-        const off = 5; // port offset from node center
-
-        for (let i = 0; i < cols; i++) {
-            for (let j = 0; j < M[i].length; j++) {
-                const cx = i * A + A;
-                const cy = (rows - j) * A;
-                const val = _data.current_equiv === '0Y' ? M[i][j] : ((m[i] ?? [])[j] ?? 0);
-
-                // fold line: up from (i,j) then left-down to parent
-                if (j < P[i].length && P[i][j] >= 0 && j + 1 < M[i].length) {
-                    const up_cy = (rows - j - 1) * A;
-                    const p_cx = P[i][j] * A + A;
-                    // vertical: top port of (i,j) → bottom port of (i,j+1)
-                    lines.push({
-                        type: 'line',
-                        x1: cx,
-                        y1: cy - off,
-                        x2: cx,
-                        y2: up_cy + off,
-                        stroke: true,
-                        stroke_color: black,
-                        width: 1,
-                    });
-                    // diagonal: bottom port of (i,j+1) → top port of (P[i][j], j)
-                    lines.push({
-                        type: 'line',
-                        x1: cx,
-                        y1: up_cy + off,
-                        x2: p_cx,
-                        y2: cy - off,
-                        stroke: true,
-                        stroke_color: black,
-                        width: 1,
-                    });
-                }
-
-                // value text (no circle)
-                extra_text.push({
-                    text: '' + val,
-                    x: cx,
-                    y: cy,
-                    size: 10,
-                    color: black,
-                    align: 'center',
-                });
-            }
+        const mountain = compute_bm_mountain_diagram(m, _data.current_equiv);
+        return draw_mountain_diagram(mountain, { WV: 0, invert_vertical: _data.invert_vertical ?? false });
+    },
+    handle_action: (data: DiagramData, action): DiagramData | null => {
+        if (action.type === 'scroll') {
+            if (action.direction === 'down') return { ...data, invert_vertical: true };
+            if (action.direction === 'up') return { ...data, invert_vertical: false };
         }
-
-        elements.unshift(...lines);
-        return { width, height, elements, extra_text };
+        return null;
     },
 };
 

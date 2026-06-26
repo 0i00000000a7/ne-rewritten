@@ -1,5 +1,5 @@
 import type { NotationDefinition } from '@/utils.ts';
-import { convert_to_0Y, display, Expr, from_display } from '@/notations/BM-like/BM.ts';
+import { convert_to_0Y, display, Expr, from_display, from_display_0Y } from '@/notations/BM-like/BM.ts';
 
 const isPseudoInfinity = (expr: Expr): boolean => '' + expr === 'Infinity';
 const cloneColumn = (col: number[]) => col.slice();
@@ -380,7 +380,10 @@ export const UPMS: NotationDefinition<Expr> = {
     simple_name: 'UPMS',
     display: { plain: display, from_display },
     display_equiv: {
-        UP0Y: { plain: (m) => (isPseudoInfinity(m) ? '1,ω' : '' + convert_to_0Y(m)), from_display },
+        UP0Y: {
+            plain: (m) => (isPseudoInfinity(m) ? '1,ω' : '' + convert_to_0Y(m)),
+            from_display: from_display_0Y,
+        },
     },
     is_limit: upmsLimit,
     compare: matrixCompare,

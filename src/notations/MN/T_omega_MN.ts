@@ -36,12 +36,12 @@ function sep_display(sep: Sep): string {
     return mountain_display(sep);
 }
 
-function is_infinite(m: Column[]) {
+function is_infinity(m: Column[]) {
     return '' + m === 'Infinity';
 }
 
 function mountain_display(m: Expr): string {
-    if (is_infinite(m)) return 'Limit';
+    if (is_infinity(m)) return 'Limit';
     return m.map((col) => '(' + col.map(([v, sep]) => sep_display(sep) + v).join('') + ')').join('');
 }
 
@@ -209,8 +209,8 @@ function expand(A0: Expr, index: number, shorter: boolean = false): Expr {
     return A;
 }
 
-function Limit(n: number): Expr {
-    return n > 0 ? [[], [[1, Limit(n - 1)]]] : [[]];
+function infinity_FS(n: number): Expr {
+    return n > 0 ? [[], [[1, infinity_FS(n - 1)]]] : [[]];
 }
 
 function calc_ancestor_depths(m: Expr): number[][] {
@@ -243,7 +243,7 @@ function calc_ancestor_depths(m: Expr): number[][] {
 }
 
 function convert_to_layer(om: Expr): Expr {
-    if (is_infinite(om)) return om;
+    if (is_infinity(om)) return om;
 
     const depthMap = calc_ancestor_depths(om);
     const dm = deepcopy(om);
@@ -261,7 +261,7 @@ function convert_to_layer(om: Expr): Expr {
 }
 
 function convert_from_layer(dm: Expr): Expr {
-    if (is_infinite(dm)) return dm;
+    if (is_infinity(dm)) return dm;
 
     const om = deepcopy(dm);
     for (let i = 0; i < om.length; i++) {
@@ -314,17 +314,17 @@ export const T_omega_MN: NotationDefinition<Expr> = {
     is_limit: mountain_is_limit,
     compare: mountain_compare,
     FS: (m: Expr, index: number) => {
-        if (is_infinite(m)) return Limit(index);
+        if (is_infinity(m)) return infinity_FS(index);
         if (m.length === 0) return [];
         return expand(m, index, true);
     },
     FS_alter: (m: Expr, index: number) => {
-        if (is_infinite(m)) return Limit(index);
+        if (is_infinity(m)) return infinity_FS(index);
         if (m.length === 0) return [];
         return expand(m, index);
     },
     FS_short: (m: Expr, index: number) => {
-        if (is_infinite(m)) return Limit(index);
+        if (is_infinity(m)) return infinity_FS(index);
         if (m.length === 0) return [];
         if (index === 0) return expand(m, 0, true);
         if (index === 1) {

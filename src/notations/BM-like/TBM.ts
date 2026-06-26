@@ -307,7 +307,7 @@ export function expand(m: Expr, index: number): Expr {
     }
 }
 
-export function is_infinite(a: Expr): boolean {
+export function is_infinity(a: Expr): boolean {
     return a.length > 0 && a[0].length > 0 && a[0][0][0] === Infinity;
 }
 
@@ -332,7 +332,7 @@ function column_display(col: Column, html: boolean): string {
 }
 
 export function display(m: Expr, html: boolean = false): string {
-    if (is_infinite(m)) return 'Limit';
+    if (is_infinity(m)) return 'Limit';
     return m.map((col) => column_display(col, html)).join('');
 }
 
@@ -340,9 +340,9 @@ export function from_display(str: string): Expr {
     throw new Error('TODO');
 }
 
-function Limit(index: number): Expr {
+function infinity_FS(index: number): Expr {
     if (index === 0) return [[]];
-    return [[], [[1, Limit(index - 1)]]];
+    return [[], [[1, infinity_FS(index - 1)]]];
 }
 
 export const TBM: NotationDefinition<Expr> = {
@@ -355,15 +355,15 @@ export const TBM: NotationDefinition<Expr> = {
         from_display,
     },
     is_limit: (m) => {
-        if (is_infinite(m)) return true;
+        if (is_infinity(m)) return true;
         if (m.length === 0) return false;
         return m[m.length - 1].length > 0;
     },
     compare,
 
     FS: (m, index) => {
-        if (is_infinite(m)) {
-            return Limit(index);
+        if (is_infinity(m)) {
+            return infinity_FS(index);
         }
         if (m.length === 0) return m;
         return expand(m, index);

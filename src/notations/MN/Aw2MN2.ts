@@ -7,7 +7,7 @@ export type Entry = [number, Sep, boolean?];
 export type Column = Entry[];
 export type Expr = Column[];
 
-export function is_infinite(a: Expr) {
+export function is_infinity(a: Expr) {
     return '' + a === 'Infinity';
 }
 
@@ -52,7 +52,7 @@ export function column_display(col: Column): string {
 }
 
 export function mountain_display(m: Expr): string {
-    if (is_infinite(m)) return 'Limit';
+    if (is_infinity(m)) return 'Limit';
     return m.map(column_display).join('');
 }
 
@@ -273,7 +273,7 @@ function expand_weak(A0: Expr, index: number, shorter = false): Expr {
     return shorter ? A.slice(0, -1) : extend(A, true, true);
 }
 
-export function Limit(n: number): Expr {
+export function infinity_FS(n: number): Expr {
     let Omega: Expr = [[], [[1, [[]]]]];
     return [[], [[1, [...Omega, ...Array.from({ length: n }, () => [])]]]];
 }
@@ -308,7 +308,7 @@ function calc_ancestor_depths(m: Expr): number[][] {
 }
 
 export function convert_to_layer(om: Expr): Expr {
-    if (is_infinite(om)) return om;
+    if (is_infinity(om)) return om;
 
     const depthMap = calc_ancestor_depths(om);
     const dm = deepcopy(om);
@@ -326,7 +326,7 @@ export function convert_to_layer(om: Expr): Expr {
 }
 
 export function convert_from_layer(dm: Expr): Expr {
-    if (is_infinite(dm)) return dm;
+    if (is_infinity(dm)) return dm;
 
     const om = deepcopy(dm);
     for (let i = 0; i < om.length; i++) {
@@ -376,7 +376,7 @@ export const A_omega2_MN2: NotationDefinition<Expr> = {
     display: mountain_display,
     is_limit: mountain_is_limit,
     compare: mountain_compare,
-    ...sequence_FS_variants(expand, is_infinite, Limit, mountain_is_limit, mountain_display),
+    ...sequence_FS_variants(expand, is_infinity, infinity_FS, mountain_is_limit, mountain_display),
     init: () => [[[[Infinity] as unknown as Entry]], []],
 };
 
@@ -390,6 +390,6 @@ export const wA_omega2_MN2: NotationDefinition<Expr> = {
     },
     is_limit: mountain_is_limit,
     compare: mountain_compare,
-    ...sequence_FS_variants(expand_weak, is_infinite, Limit, mountain_is_limit, mountain_display),
+    ...sequence_FS_variants(expand_weak, is_infinity, infinity_FS, mountain_is_limit, mountain_display),
     init: () => [[[[Infinity] as unknown as Entry]], []],
 };

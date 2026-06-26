@@ -5,14 +5,14 @@ export type SumExpr = [false, Expr, Expr];
 export type Expr = 0 | PrimExpr | SumExpr;
 export type NExpr = PrimExpr | SumExpr;
 
-export function is_infinite(m: Expr) {
+export function is_infinity(m: Expr) {
     return '' + m === 'true,Infinity';
 }
 
 type DisplayStyle = 'plain' | 'html-psi' | 'html-plain';
 
 export function LMN_display(x: Expr, style: DisplayStyle): string {
-    if (is_infinite(x)) return 'Limit';
+    if (is_infinity(x)) return 'Limit';
     if (x === 0) return style === 'html-psi' ? '0' : '';
     if (x[0]) {
         if (style === 'html-psi') {
@@ -90,7 +90,7 @@ export var LMN_compare = (x: Expr, y: Expr): number => {
 };
 
 export function LMN_is_limit(x: Expr): boolean {
-    if (is_infinite(x)) return true;
+    if (is_infinity(x)) return true;
     if (x === 0) return false;
     if (x[0]) return x[1] !== 0 || x[2] !== 0;
     return LMN_is_limit(x[2]);

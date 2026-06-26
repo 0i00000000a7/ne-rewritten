@@ -1,4 +1,4 @@
-import { compare, display, Expr, from_display, is_infinite, matrix_is_limit } from '@/notations/BM-like/BM.ts';
+import { compare, display, Expr, from_display, is_infinity, matrix_is_limit } from '@/notations/BM-like/BM.ts';
 import type { NotationDefinition } from '@/utils.ts';
 
 const data: Record<string, Expr[]> = {};
@@ -93,7 +93,7 @@ export const BHM: NotationDefinition<Expr> = {
     is_limit: matrix_is_limit,
     compare: compare,
     FS: (m: Expr, index: number) => {
-        if (is_infinite(m)) return [Array(index + 1).fill(0), Array(index + 1).fill(1)];
+        if (is_infinity(m)) return [Array(index + 1).fill(0), Array(index + 1).fill(1)];
         if (m.length === 0) return [];
         const key = display(m);
         if (!data[key]) data[key] = [];

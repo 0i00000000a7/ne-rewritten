@@ -5,8 +5,8 @@ import {
     Expr,
     find_index_below_row,
     get_references,
-    is_infinite,
-    Limit,
+    is_infinity,
+    infinity_FS,
     mountain_compare,
     mountain_display,
     mountain_is_limit,
@@ -179,7 +179,7 @@ export const A_omega2_MN3: NotationDefinition<Expr> = {
     simple_name: 'Aω2MN3',
     is_limit: mountain_is_limit,
     compare: mountain_compare,
-    ...sequence_FS_variants(expand, is_infinite, Limit, mountain_is_limit, mountain_display),
+    ...sequence_FS_variants(expand, is_infinity, infinity_FS, mountain_is_limit, mountain_display),
     init: () => [[[Infinity] as any], []],
 };
 
@@ -193,6 +193,6 @@ export const wA_omega2_MN3: NotationDefinition<Expr> = {
     simple_name: 'wAω2MN3',
     is_limit: mountain_is_limit,
     compare: mountain_compare,
-    ...sequence_FS_variants(expand_weak, is_infinite, Limit, mountain_is_limit, mountain_display),
+    ...sequence_FS_variants(expand_weak, is_infinity, infinity_FS, mountain_is_limit, mountain_display),
     init: () => [[[Infinity] as any], []],
 };

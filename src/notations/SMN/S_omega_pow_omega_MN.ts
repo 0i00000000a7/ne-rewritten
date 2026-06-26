@@ -19,16 +19,16 @@ export function Limit_expr(): Mountain {
     return [[[Infinity]]] as any;
 }
 
-export function is_infinite(m: Mountain) {
+export function is_infinity(m: Mountain) {
     return '' + m === 'Infinity';
 }
 
 export function is_limit(m: Mountain) {
-    return is_infinite(m) || (m.length > 0 && m[m.length - 1].length > 0);
+    return is_infinity(m) || (m.length > 0 && m[m.length - 1].length > 0);
 }
 
 export function display(m: Mountain): string {
-    return is_infinite(m) ? 'Limit' : mountain_display(m);
+    return is_infinity(m) ? 'Limit' : mountain_display(m);
 }
 
 function mountain_display(m: Mountain): string {
@@ -112,8 +112,8 @@ function mountain_compare(m1: Mountain, m2: Mountain): number {
 }
 
 export function compare(a: Mountain, b: Mountain): number {
-    if (is_infinite(a) || is_infinite(b)) {
-        return boolean_compare(is_infinite(a), is_infinite(b));
+    if (is_infinity(a) || is_infinity(b)) {
+        return boolean_compare(is_infinity(a), is_infinity(b));
     }
     return mountain_compare(a, b);
 }
@@ -395,12 +395,12 @@ export function extend(m0: Mountain): Mountain {
     return m;
 }
 
-export function Limit(index: number): Mountain {
+export function infinity_FS(index: number): Mountain {
     return [[], [[1, [...Array.from({ length: index }, () => 0), 1]]]];
 }
 
 export function expand(m: Mountain, index: number, shorter: boolean = false): Mountain {
-    if (is_infinite(m)) return Limit(index);
+    if (is_infinity(m)) return infinity_FS(index);
     if (m.length === 0) return m;
     if (m[m.length - 1].length === 0) return m.slice(0, m.length - 1);
     let current = m;
@@ -424,7 +424,7 @@ function calc_ancestor_depths(m: Mountain): number[][] {
 }
 
 function convert_to_layer(om: Mountain): Mountain {
-    if (is_infinite(om)) return om;
+    if (is_infinity(om)) return om;
 
     const depthMap = calc_ancestor_depths(om);
     const dm = deepcopy(om);
@@ -439,7 +439,7 @@ function convert_to_layer(om: Mountain): Mountain {
 }
 
 function convert_from_layer(dm: Mountain): Mountain {
-    if (is_infinite(dm)) return dm;
+    if (is_infinity(dm)) return dm;
 
     const om = deepcopy(dm);
 
@@ -484,7 +484,7 @@ export const S_omega_pow_omega_MN: NotationDefinition<Mountain> = {
             from_display: (str) => convert_from_layer(from_display(str)),
         },
     },
-    ...MN_FS_variants(expand, is_infinite, Limit, is_limit, display),
+    ...MN_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
     is_limit,
     compare,
     init: () => [Limit_expr(), []],

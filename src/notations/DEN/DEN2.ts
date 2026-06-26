@@ -27,7 +27,7 @@ function compare(expr1: Expr, expr2: Expr): number {
     return seq_seq_compare(toShort(expr1), toShort(expr2));
 }
 
-function is_infinite(expr: Row[]) {
+function is_infinity(expr: Row[]) {
     return '' + expr === 'Infinity';
 }
 
@@ -40,7 +40,7 @@ function row_display(row: Row) {
 }
 
 function display(expr: Expr) {
-    return is_infinite(expr) ? 'Limit' : expr.map(row_display).join('');
+    return is_infinity(expr) ? 'Limit' : expr.map(row_display).join('');
 }
 
 function from_display(str: string): Expr {
@@ -100,7 +100,7 @@ function pleasant_until(rows: Row[], t: Row): number {
 }
 
 function is_limit(expr: Expr): boolean {
-    if (is_infinite(expr)) return true;
+    if (is_infinity(expr)) return true;
     if (expr.length === 0) return false;
     let active = expr[expr.length - 1];
     if (!active[1][active[0]]?.[0]) return false;
@@ -271,7 +271,7 @@ function Limit_row(n: number): Row {
     ];
 }
 
-function Limit(n: number): Expr {
+function infinity_FS(n: number): Expr {
     const start: Expr = [
         [1, [[1], [0]]],
         [1, [[2], [1], [0]]],
@@ -286,7 +286,7 @@ function Limit(n: number): Expr {
 export const draw_diagram_control: DiagramControl<Expr, { offset: number }> = {
     default_data: { offset: 0 },
     draw_diagram: (expr: Expr, data: { offset: number }): Diagram | undefined => {
-        if (is_infinite(expr) || expr.length === 0) return undefined;
+        if (is_infinity(expr) || expr.length === 0) return undefined;
         const A = 16;
         const max_display = 40;
         const total = expr.length;
@@ -367,7 +367,7 @@ export const DEN2: NotationDefinition<Expr> = {
     display: { plain: display, from_display },
     is_limit: is_limit,
     compare,
-    ...sequence_FS_variants(expand, is_infinite, Limit, is_limit, display),
+    ...sequence_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
     draw_diagram: draw_diagram_control,
     init: () => [[Infinity] as any, []],
 };

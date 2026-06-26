@@ -19,7 +19,7 @@ type Entry = [number, Sep];
 type Column = Entry[];
 type Expr = Column[];
 
-function is_infinite(m: Expr): boolean {
+function is_infinity(m: Expr): boolean {
     return ('' + m).startsWith('Infinity');
 }
 
@@ -32,14 +32,14 @@ function column_compare(a: Column, b: Column): number {
 }
 
 function mountain_compare(a: Expr, b: Expr): number {
-    if (is_infinite(a) && is_infinite(b)) return 0;
-    if (is_infinite(a)) return 1;
-    if (is_infinite(b)) return -1;
+    if (is_infinity(a) && is_infinity(b)) return 0;
+    if (is_infinity(a)) return 1;
+    if (is_infinity(b)) return -1;
     return lex_compare(a, b, column_compare);
 }
 
 function mountain_is_limit(m: Expr): boolean {
-    return is_infinite(m) || (m.length > 0 && m[m.length - 1].length > 0);
+    return is_infinity(m) || (m.length > 0 && m[m.length - 1].length > 0);
 }
 
 function sep_display(sep: Sep): string {
@@ -59,7 +59,7 @@ function column_display(col: Column): string {
 }
 
 function mountain_display(m: Expr): string {
-    if (is_infinite(m)) return 'Limit';
+    if (is_infinity(m)) return 'Limit';
     return m.map(column_display).join('');
 }
 
@@ -251,7 +251,7 @@ function expand(m0: Expr, index: number, shorter: boolean = false): Expr {
     return m;
 }
 
-function Limit(n: number): Expr {
+function infinity_FS(n: number): Expr {
     return [[], [[1, n]]];
 }
 
@@ -285,7 +285,7 @@ function calc_ancestor_depths(m: Expr): number[][] {
 }
 
 function convert_to_layer(om: Expr): Expr {
-    if (is_infinite(om)) return om;
+    if (is_infinity(om)) return om;
 
     const depthMap = calc_ancestor_depths(om);
     const dm = deepcopy(om);
@@ -300,7 +300,7 @@ function convert_to_layer(om: Expr): Expr {
 }
 
 function convert_from_layer(dm: Expr): Expr {
-    if (is_infinite(dm)) return dm;
+    if (is_infinity(dm)) return dm;
 
     const om = deepcopy(dm);
 
@@ -341,7 +341,7 @@ export interface DiagramData {
 
 /** 计算层：将 ωMN 的 Expr 转为 MountainDiagramData。 */
 function compute_mountain_diagram(expr: Expr, current_equiv?: string): MountainDiagramData | undefined {
-    if (is_infinite(expr) || expr.length === 0) return undefined;
+    if (is_infinity(expr) || expr.length === 0) return undefined;
 
     const m = expr;
     const m_display = current_equiv === 'layer' ? convert_to_layer(expr) : expr;
@@ -423,6 +423,6 @@ export const omega_MN: NotationDefinition<Expr> = {
     is_limit: mountain_is_limit,
     compare: mountain_compare,
     draw_diagram: draw_diagram_control,
-    ...MN_FS_variants(expand, is_infinite, Limit, mountain_is_limit, mountain_display),
+    ...MN_FS_variants(expand, is_infinity, infinity_FS, mountain_is_limit, mountain_display),
     init: () => [[[[Infinity] as any]], [[]], []],
 };

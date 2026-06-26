@@ -7,7 +7,7 @@ import { draw_mountain_diagram, type MountainDiagramData } from '@/notations/dra
 export type Expr = number[][];
 
 /** 判断表达式是否表示极限（[[Infinity]]）。 */
-export function is_infinite(a: Expr): boolean {
+export function is_infinity(a: Expr): boolean {
     return ('' + a).startsWith('Infinity');
 }
 
@@ -17,15 +17,15 @@ export function is_limit(a: Expr): boolean {
 
 /** 矩阵比较：先处理 Infinity，再按字典序逐列比较。 */
 export function compare(a: Expr, b: Expr): number {
-    if (is_infinite(a) && is_infinite(b)) return 0;
-    if (is_infinite(a)) return 1;
-    if (is_infinite(b)) return -1;
+    if (is_infinity(a) && is_infinity(b)) return 0;
+    if (is_infinity(a)) return 1;
+    if (is_infinity(b)) return -1;
     return lex_compare(a, b, (ca, cb) => lex_compare(ca, cb, number_compare));
 }
 
 /** 矩阵显示为字符串。空列显示为 (0)。 */
 export function display(a: Expr): string {
-    if (is_infinite(a)) return 'Limit';
+    if (is_infinity(a)) return 'Limit';
     return a.map((col) => '(' + (col.length > 0 ? col.map((e) => '' + e).join(',') : '0') + ')').join('');
 }
 
@@ -100,7 +100,7 @@ export function from_display(s: string): Expr {
 
 /** 判断矩阵是否为极限（无限或最后一列首行非零）。 */
 export function matrix_is_limit(a: Expr): boolean {
-    return is_infinite(a) || (a.length > 0 && a[a.length - 1][0] > 0);
+    return is_infinity(a) || (a.length > 0 && a[a.length - 1][0] > 0);
 }
 
 /** 返回每列末尾不含 0 的标准形式。 */
@@ -197,7 +197,7 @@ function expand(m: Expr, index: number): Expr {
     return result;
 }
 
-function Limit(n: number): Expr {
+function infinity_FS(n: number): Expr {
     return [[], Array.from({ length: n + 1 }, () => 1)];
 }
 
@@ -243,7 +243,7 @@ export function convert_to_0Y(m: Expr): number[] {
 }
 
 export function display_0Y(m: Expr): string {
-    return is_infinite(m) ? '1,ω' : convert_to_0Y(m).join(',');
+    return is_infinity(m) ? '1,ω' : convert_to_0Y(m).join(',');
 }
 
 export function compute_0Y_mountain(seq: number[]): MountainData {
@@ -329,7 +329,7 @@ function compute_bm_mountain_diagram(m: Expr, current_equiv?: string): MountainD
 const draw_diagram_control: DiagramControl<Expr, DiagramData> = {
     default_data: { current_equiv: undefined, invert_vertical: undefined },
     draw_diagram: (m: Expr, _data: DiagramData): Diagram | undefined => {
-        if (is_infinite(m) || m.length === 0) return undefined;
+        if (is_infinity(m) || m.length === 0) return undefined;
         const mountain = compute_bm_mountain_diagram(m, _data.current_equiv);
         return draw_mountain_diagram(mountain, { WV: 0, invert_vertical: _data.invert_vertical ?? false });
     },
@@ -357,7 +357,7 @@ export const BM4: NotationDefinition<Expr> = {
     compare,
     draw_diagram: draw_diagram_control,
 
-    ...Y_FS_variants(expand, is_infinite, Limit, is_limit, display),
+    ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
 
     init: () => [[[Infinity]], []],
 

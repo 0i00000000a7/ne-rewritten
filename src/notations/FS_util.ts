@@ -1,7 +1,7 @@
 export function Y_FS_variants<T>(
     expand_longer: (seq: T[], index: number) => T[],
-    is_infinite: (seq: T[]) => boolean,
-    Limit: (index: number) => T[],
+    is_infinity: (seq: T[]) => boolean,
+    infinity_FS: (index: number) => T[],
     is_limit: (seq: T[]) => boolean,
     display: (seq: T[]) => string,
 ): Record<'FS' | 'FS_alter' | 'FS_short', (seq: T[], index: number) => T[]> {
@@ -11,7 +11,7 @@ export function Y_FS_variants<T>(
     const core = {
         FS: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);
             if (data[data_key] === undefined) data[data_key] = [];
@@ -20,14 +20,14 @@ export function Y_FS_variants<T>(
         },
         FS_alter: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const result = core.FS(seq, index);
             return result.slice(0, result.length - 1);
         },
         FS_short: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             if (index === 0) return seq.slice(0, seq.length - 1);
             if (index === 1) {
@@ -47,8 +47,8 @@ export function Y_FS_variants<T>(
 
 export function sequence_FS_variants<T>(
     expand: (seq: T[], index: number, shorter: boolean) => T[],
-    is_infinite: (seq: T[]) => boolean,
-    Limit: (index: number) => T[],
+    is_infinity: (seq: T[]) => boolean,
+    infinity_FS: (index: number) => T[],
     is_limit: (seq: T[]) => boolean,
     display: (seq: T[]) => string,
 ): Record<'FS' | 'FS_alter' | 'FS_short', (seq: T[], index: number) => T[]> {
@@ -59,7 +59,7 @@ export function sequence_FS_variants<T>(
     const core = {
         FS: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);
             if (data[data_key] === undefined) data[data_key] = [];
@@ -68,7 +68,7 @@ export function sequence_FS_variants<T>(
         },
         FS_alter: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);
             if (data_alter[data_key] === undefined) data_alter[data_key] = [];
@@ -77,7 +77,7 @@ export function sequence_FS_variants<T>(
         },
         FS_short: (seq: T[], index: number): T[] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             if (index === 0) return seq.slice(0, seq.length - 1);
             if (index === 1) {
@@ -97,8 +97,8 @@ export function sequence_FS_variants<T>(
 
 export function MN_FS_variants<T>(
     expand: (seq: T[][], index: number, shorter: boolean) => T[][],
-    is_infinite: (seq: T[][]) => boolean,
-    Limit: (index: number) => T[][],
+    is_infinity: (seq: T[][]) => boolean,
+    infinity_FS: (index: number) => T[][],
     is_limit: (seq: T[][]) => boolean,
     display: (seq: T[][]) => string,
 ): Record<'FS' | 'FS_alter' | 'FS_short', (seq: T[][], index: number) => T[][]> {
@@ -109,7 +109,7 @@ export function MN_FS_variants<T>(
     const core = {
         FS: (seq: T[][], index: number): T[][] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);
             if (data[data_key] === undefined) data[data_key] = [];
@@ -118,7 +118,7 @@ export function MN_FS_variants<T>(
         },
         FS_alter: (seq: T[][], index: number): T[][] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);
             if (data_alter[data_key] === undefined) data_alter[data_key] = [];
@@ -127,7 +127,7 @@ export function MN_FS_variants<T>(
         },
         FS_short: (seq: T[][], index: number): T[][] => {
             if (!seq.length) return [];
-            if (is_infinite(seq)) return Limit(index);
+            if (is_infinity(seq)) return infinity_FS(index);
             if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
             if (index === 0) return seq.slice(0, seq.length - 1);
             const data_key = display(seq);

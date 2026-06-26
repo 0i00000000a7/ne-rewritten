@@ -18,12 +18,12 @@ interface Entry {
 
 type Mountain = Entry[][];
 
-function is_infinite(expr: number[]) {
+function is_infinity(expr: number[]) {
     return '' + expr === 'Infinity';
 }
 
 export function sequence_display(expr: Expr): string {
-    return is_infinite(expr) ? 'Limit' : '' + expr;
+    return is_infinity(expr) ? 'Limit' : '' + expr;
 }
 
 export function is_limit(seq: Expr): boolean {
@@ -536,8 +536,9 @@ function to_dbms_display(seq: Expr, Asheep: boolean): string {
         result += '(';
         for (let j = col.length - 3; j >= 0; j--) {
             let entry = col[j];
-            result += ','.repeat(entry.sep! + 1) + entry.depth;
+            result += Asheep ? ','.repeat(entry.sep! + 1) + entry.depth : entry.depth + ','.repeat(entry.sep! + 1);
         }
+        if (!Asheep) result += '0';
         result += ')';
     }
 
@@ -572,7 +573,7 @@ interface YDiagramData {
 }
 
 function compute_y_mountain_diagram(seq: Expr, current_equiv: string | undefined): MountainDiagramData | undefined {
-    if (is_infinite(seq) || seq.length === 0) return undefined;
+    if (is_infinity(seq) || seq.length === 0) return undefined;
     const mountain = draw_dbms_mountain(draw_mountain(from_sequence(seq)), current_equiv === 'ADBMS');
 
     const vertical_set = new DisplaySet<Vertical>(vertical_display);
@@ -592,7 +593,12 @@ function compute_y_mountain_diagram(seq: Expr, current_equiv: string | undefined
         for (let j = 0; j < mountain[i].length - 1; j++) {
             const entry = mountain[i][j];
             const vj = vertical_index.get(entry.y)!;
-            if (current_equiv !== undefined) {
+            if (current_equiv === 'DBMS') {
+                entries[i][vj - 1] =
+                    entry.right_up !== undefined
+                        ? '' + entry.right_up.depth + ','.repeat(entry.right_up.sep! + 1)
+                        : '0';
+            } else if (current_equiv === 'ADBMS') {
                 entries[i][vj - 1] = entry.sep !== undefined ? ','.repeat(entry.sep + 1) + entry.depth : '*';
             } else {
                 entries[i][vj - 1] = '' + entry.value;
@@ -657,7 +663,7 @@ function create_magma_notation(type: string, magma: (seq: Expr, index: number) =
         is_limit,
         compare: seq_compare,
         draw_diagram: y_diagram_control,
-        ...Y_FS_variants(magma, is_infinite, (index) => [1, index + 1], is_limit, sequence_display),
+        ...Y_FS_variants(magma, is_infinity, (index) => [1, index + 1], is_limit, sequence_display),
         init: () => [[Infinity], [1], []],
     };
 }

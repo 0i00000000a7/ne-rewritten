@@ -1,6 +1,6 @@
 import { createApp, reactive, watch } from 'vue';
 import App from '@/App.vue';
-import { BM4 } from '@/notations/BM-like/BM.ts';
+import { BM4, seq_0Y } from '@/notations/BM-like/BM.ts';
 import { omega } from '@/notations/Omega';
 import { TBM } from '@/notations/BM-like/TBM.ts';
 import { Y_seq } from '@/notations/Y/Y.ts';
@@ -38,10 +38,13 @@ import { n_MN } from '@/notations/SMN/n_MN.ts';
 import { SA_omega2_MN } from '@/notations/SMN/SA_omega2_MN.ts';
 import { S_omega2_MN } from '@/notations/SMN/S_omega2_MN.ts';
 import { S_omega_pow_omega_MN } from '@/notations/SMN/S_omega_pow_omega_MN.ts';
+import { BOCF_EBO } from '@/notations/OCN/BOCF_EBO.ts';
+import { NOCF_EBO } from '@/notations/OCN/NOCF_EBO.ts';
 
 register_notation(omega);
 register_notation(BM4);
 register_notation(TBM);
+register_notation(seq_0Y);
 register_notation(Y_seq);
 register_notation(omega_Y_weak);
 register_notation(omega_Y_actual);
@@ -61,13 +64,13 @@ register_notation(S_omega2_MN);
 register_notation(S_omega_pow_omega_MN);
 register_notation(BHM);
 register_notation(BSM);
+register_notation(UPMS);
+register_notation(LPMS);
 register_notation(DEN);
 register_notation(DEN2);
 register_notation(DEN3);
 register_notation(LMN);
 register_notation(LON);
-register_notation(UPMS);
-register_notation(LPMS);
 register_notation(TON_DRC);
 register_notation(TON_DRP);
 register_notation(TON_DoR);
@@ -81,6 +84,8 @@ register_notation(aSAN);
 register_notation(aSAN2);
 register_notation(aSAN3);
 register_notation(aSAN_tilde3plus);
+register_notation(BOCF_EBO);
+register_notation(NOCF_EBO);
 
 window.notations ??= {};
 for (let notation of list_notations()) {

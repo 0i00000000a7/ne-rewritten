@@ -285,12 +285,15 @@ export function from_display_0Y(str: string): Expr {
 }
 
 export interface DiagramData {
-    current_equiv: '0Y' | undefined;
+    current_equiv: '0Y' | 'BMS' | undefined;
     invert_vertical?: boolean;
 }
 
 /** 计算层：将 BM 的 Expr 转为 MountainDiagramData。 */
-function compute_bm_mountain_diagram(m: Expr, current_equiv?: string): MountainDiagramData {
+function compute_bm_mountain_diagram(
+    m: Expr,
+    current_equiv: DiagramData['current_equiv'] & string,
+): MountainDiagramData {
     const { M, P } = compute_mountain(m);
     const h = M[0].length - 1; // 行数 - 1
 
@@ -326,11 +329,11 @@ function compute_bm_mountain_diagram(m: Expr, current_equiv?: string): MountainD
     return { sorted_verticals, heights, line_heights: [], entries, left_legs };
 }
 
-const draw_diagram_control: DiagramControl<Expr, DiagramData> = {
+const draw_diagram_control_BM: DiagramControl<Expr, DiagramData> = {
     default_data: { current_equiv: undefined, invert_vertical: undefined },
     draw_diagram: (m: Expr, _data: DiagramData): Diagram | undefined => {
         if (is_infinity(m) || m.length === 0) return undefined;
-        const mountain = compute_bm_mountain_diagram(m, _data.current_equiv);
+        const mountain = compute_bm_mountain_diagram(m, _data.current_equiv ?? 'BMS');
         return draw_mountain_diagram(mountain, { WV: 0, invert_vertical: _data.invert_vertical ?? false });
     },
     handle_action: (data: DiagramData, action): DiagramData | null => {
@@ -339,6 +342,15 @@ const draw_diagram_control: DiagramControl<Expr, DiagramData> = {
             if (action.direction === 'up') return { ...data, invert_vertical: false };
         }
         return null;
+    },
+};
+
+const draw_diagram_control_0Y: DiagramControl<Expr, DiagramData> = {
+    ...draw_diagram_control_BM,
+    draw_diagram: (m: Expr, _data: DiagramData): Diagram | undefined => {
+        if (is_infinity(m) || m.length === 0) return undefined;
+        const mountain = compute_bm_mountain_diagram(m, _data.current_equiv ?? '0Y');
+        return draw_mountain_diagram(mountain, { WV: 0, invert_vertical: _data.invert_vertical ?? false });
     },
 };
 
@@ -355,11 +367,31 @@ export const BM4: NotationDefinition<Expr> = {
     },
     is_limit: matrix_is_limit,
     compare,
-    draw_diagram: draw_diagram_control,
+    draw_diagram: draw_diagram_control_BM,
 
     ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
 
     init: () => [[[Infinity]], []],
 
     debug: { compute_0Y_mountain },
+};
+
+export const seq_0Y: NotationDefinition<Expr> = {
+    id: '0y',
+    name: '0-Y sequence',
+    simple_name: '0Y',
+    display: { plain: display_0Y, from_display: from_display_0Y },
+    display_equiv: {
+        BMS: {
+            plain: display,
+            from_display,
+        },
+    },
+    is_limit: matrix_is_limit,
+    compare,
+    draw_diagram: draw_diagram_control_0Y,
+
+    ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
+
+    init: () => [[[Infinity]], []],
 };

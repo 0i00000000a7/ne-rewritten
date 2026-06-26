@@ -647,10 +647,6 @@ onUnmounted(() => {
     color: #999;
 }
 
-.expr-display {
-    font-family: 'Comic Sans MS', sans-serif;
-}
-
 .expr-display.shifted {
     margin-left: 12px;
     color: #666;
@@ -777,10 +773,6 @@ ul {
 .tree-item input[type='text'] {
     width: 100%;
     margin: 0;
-}
-
-body {
-    font-family: 'Comic Sans MS', sans-serif;
 }
 
 .toolbar select {

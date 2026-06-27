@@ -21,6 +21,7 @@ const messages: Record<Language, Record<string, string>> = {
         'toolbar.import': '导入',
         'toolbar.save': '保存',
         'toolbar.hotkeys': '快捷键',
+        'toolbar.tips': '说明',
         'equiv.label': '等价表示:',
         'equiv.none': '(无)',
         'equiv.hide-original': '隐藏原表达式',
@@ -67,9 +68,25 @@ const messages: Record<Language, Record<string, string>> = {
         'expand.preview-hint': '按 Enter 填入',
         'expand.fill': '填入 (Enter)',
         'expand.cancel': '取消 (Esc)',
-        'expand.error-parse': '解析错误：表达式语法不正确',
-        'expand.error-no-from-display': '记号 "{{name}}" 不支持 from_display',
+        'expand.error-parse': '解析错误: 表达式语法不正确',
+        'expand.error-no-from-display': '记号 "{{name}}" 不支持从字符串解析',
         'expand.error-fs': '基本列计算失败',
+        'tips.intro':
+            '本网站设计目标为使得 PC 用户在分析时基本实现纯键盘操作, 避免使用鼠标打断心流. 以下这些功能均为为这个目的而设计的. 如有更多建议, 可向作者提出.',
+        'tips.features': '功能说明',
+        'tips.f1': '在文本框中输入分析条目, 随后可导出为 Excel 表格. 部分记号支持导入相同格式的表格.',
+        'tips.f2':
+            '<kbd>Enter</kbd> 可以展开当前条目的基本列; <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 可以连续展开当前项目的基本列直到后继序数.',
+        'tips.f3':
+            '<kbd>Ctrl</kbd>+<kbd>E</kbd> 可以展开当前分析使用的记号的基本列. 这依赖从输入反解析为表达式, 只支持部分记号. 如希望支持更多记号, 可联系作者.',
+        'tips.f4':
+            '<kbd>↑</kbd>/<kbd>↓</kbd> 箭头可以把光标在条目之间移动; <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> 可快速移动到最近的已输入分析的条目.',
+        'tips.f5': '<kbd>Ctrl</kbd>+<kbd>R</kbd> 全局快捷键可以把光标切回上一次修改的条目.',
+        'tips.faq': '常见问题',
+        'tips.q1': '对于能标记层级化的山脉记号, 大部分都实装了标记层级. 展开设置页, 然后切换 "等价表示" 的选项即可.',
+        'tips.q2':
+            '同一个功能也支持 BMS/0Y, ωY/DBMS 的对照. 可以关闭 "隐藏原表达式" 来同时显示两个记号. 也支持 UP0Y, LP0Y (虽然后者不建议尝试).',
+        'tips.q3': '如果最上面一栏中, 你不关心的记号非常占空间, 可以按 "显示的记号" 按钮来隐藏.',
     },
     en: {
         'notation-name.mode-label': 'Notation name mode:',
@@ -87,6 +104,7 @@ const messages: Record<Language, Record<string, string>> = {
         'toolbar.import': 'Import',
         'toolbar.save': 'Save',
         'toolbar.hotkeys': 'Hotkeys',
+        'toolbar.tips': 'Tips',
         'equiv.label': 'Equivalent notation:',
         'equiv.none': '(none)',
         'equiv.hide-original': 'Hide original',
@@ -134,8 +152,26 @@ const messages: Record<Language, Record<string, string>> = {
         'expand.fill': 'Fill (Enter)',
         'expand.cancel': 'Cancel (Esc)',
         'expand.error-parse': 'Parse error: invalid expression syntax',
-        'expand.error-no-from-display': 'The notation "{{name}}" does not support from_display',
+        'expand.error-no-from-display': 'The notation "{{name}}" does not support parsing from string',
         'expand.error-fs': 'FS computation failed',
+        'tips.intro':
+            'This site is designed for keyboard-first analysis on PC to avoid breaking flow with mouse. Features below serve this goal. Suggestions welcome.',
+        'tips.features': 'Features',
+        'tips.f1':
+            'Type analysis entries in the input box, then export to Excel. Some notations support importing the same format.',
+        'tips.f2':
+            '<kbd>Enter</kbd> expands the fundamental sequence of the current entry; <kbd>Ctrl</kbd>+<kbd>Enter</kbd> expands repeatedly until a successor ordinal.',
+        'tips.f3':
+            '<kbd>Ctrl</kbd>+<kbd>E</kbd> opens the expand modal, which parses the input text into an expression and computes its FS. Only supported for notations with from_display.',
+        'tips.f4':
+            '<kbd>↑</kbd>/<kbd>↓</kbd> move the cursor between entries; <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> jump to the nearest entry with analysis.',
+        'tips.f5': '<kbd>Ctrl</kbd>+<kbd>R</kbd> global shortcut refocuses the last modified entry.',
+        'tips.faq': 'FAQ',
+        'tips.q1':
+            'For mountain notations that support layered display, most have it implemented. Open settings and switch the "Equivalent notation" option.',
+        'tips.q2':
+            'BMS/0Y and ωY/DBMS comparison are also supported. Uncheck "Hide original" to show both notations. UP0Y and LP0Y are also supported (though the latter is not recommended).',
+        'tips.q3': 'If unused notations clutter the toolbar, use the "config shown notations" button to hide them.',
     },
 };
 

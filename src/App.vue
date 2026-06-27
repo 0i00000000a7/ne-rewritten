@@ -12,6 +12,7 @@ import { resolve_display } from '@/utils';
 import { use_diagram } from '@/composables/use_diagram.ts';
 import DiagramViewer from '@/components/DiagramViewer.vue';
 import HotkeyDialog from '@/components/HotkeyDialog.vue';
+import TipsDialog from '@/components/TipsDialog.vue';
 import NotationSelector from '@/components/NotationSelector.vue';
 import { create_t, I18N_KEY } from '@/composables/use_i18n';
 import ExpandDialog from '@/components/ExpandDialog.vue';
@@ -99,6 +100,7 @@ const tier_name = computed(() => {
 
 const file_input = ref<HTMLInputElement>();
 const show_hotkeys = ref(false);
+const show_tips = ref(false);
 
 const ANALYSIS_STORAGE_PREFIX = 'ne-analysis-';
 let auto_save_timer: ReturnType<typeof setInterval> | null = null;
@@ -388,6 +390,7 @@ onUnmounted(() => {
                     <button @mousedown="handle_import">{{ t('toolbar.import') }}</button>
                     <button @mousedown="save_analysis">{{ t('toolbar.save') }}</button>
                     <button @mousedown="show_hotkeys = true">{{ t('toolbar.hotkeys') }}</button>
+                    <button class="toolbar-btn-tips" @mousedown="show_tips = true">{{ t('toolbar.tips') }}</button>
                     <input
                         ref="file_input"
                         type="file"
@@ -519,6 +522,7 @@ onUnmounted(() => {
         <NotationSelector :show="show_notation_selector" @close="show_notation_selector = false" />
         <HotkeyDialog :show="show_hotkeys" @close="show_hotkeys = false" />
         <ExpandDialog :show="expand_dialog_state.visible.value" @close="expand_dialog_state.close()" />
+        <TipsDialog :show="show_tips" @close="show_tips = false" />
     </div>
 </template>
 
@@ -624,6 +628,14 @@ onUnmounted(() => {
 
 .reset-btn:hover {
     background: #fdd !important;
+}
+
+.toolbar-btn-tips {
+    color: #06c !important;
+    font-weight: 600;
+}
+.toolbar-btn-tips:hover {
+    background: #e0ecff !important;
 }
 
 .tier-icon {

@@ -9,6 +9,14 @@ type Entry = [number, Sep];
 const data = new Map<string, Expr>();
 const datashort = new Map<string, Expr>();
 
+function is_infinity(m: Column[]) {
+    return '' + m === 'Infinity';
+}
+
+function INFINITY(): Expr {
+    return [[[Infinity] as any]];
+}
+
 function entry_compare(a: Entry, b: Entry): number {
     if (a[0] < b[0]) return -1;
     if (a[0] > b[0]) return 1;
@@ -31,17 +39,32 @@ function mountain_is_one(m: Expr) {
     return m.length === 1 && m[0].length === 0;
 }
 
-function sep_display(sep: Sep): string {
-    if (sep.every((col) => !col.length)) return ','.repeat(sep.length);
-    return mountain_display(sep);
+function sep_display(sep: Sep, simple: boolean): string {
+    if (sep.every((col) => !col.length)) {
+        let sep_len = sep.length;
+        if (sep_len === 1 && simple) return '';
+        return ','.repeat(sep_len);
+    }
+    let d_m = mountain_display(sep, simple);
+    return simple ? '[' + d_m + ']' : d_m;
 }
 
-function is_infinity(m: Column[]) {
-    return '' + m === 'Infinity';
+function entry_display([v, sep]: Entry, simple: boolean): string {
+    let d_sep = sep_display(sep, simple);
+    let d_v = '' + v;
+    if (simple && d_v.length >= 2) d_v = '(' + d_v + ')';
+    return d_sep + d_v;
 }
 
-function INFINITY(): Expr {
-    return [[[Infinity] as any]];
+function column_display(col: Column, simple: boolean): string {
+    if (simple && col.length === 0) return '0';
+    let result = col.map((e) => entry_display(e, simple)).join('');
+    return simple ? result : '(' + result + ')';
+}
+
+function mountain_display(m: Expr, simple: boolean): string {
+    if (is_infinity(m)) return 'Limit';
+    return m.map((col) => column_display(col, simple)).join(simple ? ' ' : '');
 }
 
 function mountain_from_display(s: string): Expr {
@@ -126,9 +149,99 @@ function mountain_from_display(s: string): Expr {
     return result;
 }
 
-function mountain_display(m: Expr): string {
-    if (is_infinity(m)) return 'Limit';
-    return m.map((col) => '(' + col.map(([v, sep]) => sep_display(sep) + v).join('') + ')').join('');
+function from_display_simple(s: string): Expr {
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + s);
+    }
+
+    function skip_spaces(): void {
+        while (i < s.length && s[i] === ' ') i++;
+    }
+
+    function parse_value(): number {
+        if (i < s.length && s[i] === '(') {
+            i++;
+            const start = i;
+            while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+            if (start === i) error();
+            if (i >= s.length || s[i] !== ')') error();
+            const v = parseInt(s.substring(start, i), 10);
+            i++;
+            return v;
+        }
+        if (i < s.length && s[i] >= '0' && s[i] <= '9') {
+            const v = s.charCodeAt(i) - 48;
+            i++;
+            return v;
+        }
+        error();
+    }
+
+    function parse_sep(): Sep {
+        let comma_count = 0;
+        while (i < s.length && s[i] === ',') {
+            comma_count++;
+            i++;
+        }
+        if (comma_count > 0) {
+            return Array.from({ length: comma_count }, () => []);
+        }
+
+        if (i < s.length && s[i] === '[') {
+            i++;
+            const sep = parse_expr(']');
+            if (i >= s.length || s[i] !== ']') error();
+            i++;
+            return sep;
+        }
+
+        return [[]];
+    }
+
+    function parse_entry(): Entry {
+        const sep = parse_sep();
+        const v = parse_value();
+        return [v, sep];
+    }
+
+    function parse_column(stop_char?: string): Column {
+        const col: Column = [];
+        while (i < s.length && s[i] !== ' ' && (stop_char === undefined || s[i] !== stop_char)) {
+            col.push(parse_entry());
+        }
+        return col;
+    }
+
+    function parse_expr(stop_char?: string): Expr {
+        const result: Expr = [];
+        while (true) {
+            skip_spaces();
+            if (i >= s.length) break;
+            if (stop_char !== undefined && s[i] === stop_char) break;
+            if (s[i] === '0' && (i + 1 >= s.length || s[i + 1] === ' ' || s[i + 1] === stop_char)) {
+                result.push([]);
+                i++;
+                continue;
+            }
+            result.push(parse_column(stop_char));
+        }
+        return result;
+    }
+
+    skip_spaces();
+    if (i + 5 <= s.length && s.substring(i, i + 5) === 'Limit') {
+        i += 5;
+        skip_spaces();
+        if (i !== s.length) error();
+        return INFINITY();
+    }
+
+    const result = parse_expr();
+    skip_spaces();
+    if (i !== s.length) error();
+    return result;
 }
 
 function vertical_compare(a: Vertical, b: Vertical): number {
@@ -199,7 +312,7 @@ function threshold(A: Expr, shorter: boolean, low: Vertical, high: Vertical): nu
 }
 
 function expand(A0: Expr, index: number, shorter: boolean = false): Expr {
-    const data_key = mountain_display(A0);
+    const data_key = mountain_display(A0, true);
     if (shorter) {
         const v = datashort.get(data_key + '"' + index);
         if (v) return v;
@@ -393,11 +506,22 @@ function convert_from_layer(dm: Expr): Expr {
 export const T_omega_MN: NotationDefinition<Expr> = {
     id: 't-omega-mn',
     name: 'TωMN',
-    display: { plain: mountain_display, from_display: mountain_from_display },
+    display: {
+        plain: (m) => mountain_display(m, false),
+        from_display: mountain_from_display,
+    },
     display_equiv: {
         layer: {
-            plain: (m) => mountain_display(convert_to_layer(m)),
+            plain: (m) => mountain_display(convert_to_layer(m), false),
             from_display: (s) => convert_from_layer(mountain_from_display(s)),
+        },
+        simple: {
+            plain: (m) => mountain_display(m, true),
+            from_display: from_display_simple,
+        },
+        'layer simple': {
+            plain: (m) => mountain_display(convert_to_layer(m), true),
+            from_display: (s) => convert_from_layer(from_display_simple(s)),
         },
     },
     is_limit: mountain_is_limit,

@@ -18,7 +18,7 @@ export type Entry = [number, Sep];
 export type Column = Entry[];
 export type Mountain = Column[];
 
-export function Limit_expr(): Mountain {
+export function INFINITY(): Mountain {
     return [[[Infinity]]] as any;
 }
 
@@ -30,32 +30,39 @@ export function is_limit(m: Mountain) {
     return is_infinity(m) || (m.length > 0 && m[m.length - 1].length > 0);
 }
 
-export function display(m: Mountain): string {
-    return is_infinity(m) ? 'Limit' : mountain_display(m);
+function to_data_key(m: Mountain): string {
+    return mountain_display(m, true);
 }
 
-function mountain_display(m: Mountain): string {
-    return m.map(column_display).join('');
+function mountain_display(m: Mountain, simple: boolean): string {
+    if (is_infinity(m)) return 'Limit';
+    return m.map((col) => column_display(col, simple)).join(simple ? ' ' : '');
 }
 
-function column_display(c: Column): string {
-    return '(' + c.map(entry_display).join('') + ')';
+function column_display(c: Column, simple: boolean): string {
+    if (simple && c.length === 0) return '0';
+    let result = c.map((e) => entry_display(e, simple)).join('');
+    return simple ? result : '(' + result + ')';
 }
 
-function entry_display([v, sep]: Entry): string {
-    return sep_display(sep) + v;
+function entry_display([v, sep]: Entry, simple: boolean): string {
+    let d_sep = sep_display(sep, simple);
+    let d_v = '' + v;
+    if (simple && d_v.length >= 2) d_v = '(' + d_v + ')';
+    return d_sep + d_v;
 }
 
-function sep_display(sep: Sep): string {
+function sep_display(sep: Sep, simple: boolean): string {
+    if (simple && sep === 0) return '';
     return ','.repeat(sep + 1);
 }
 
 function vertical_display(v: Vertical): string {
-    return v.map(sep_display).join('/');
+    return v.map((s) => sep_display(s, false)).join('/');
 }
 
 function from_display(str: string): Mountain {
-    if (str === 'Limit') return Limit_expr();
+    if (str === 'Limit') return INFINITY();
 
     function parseSimpleSep(start: number): [Sep, number] {
         let c0 = 0;
@@ -87,6 +94,83 @@ function from_display(str: string): Mountain {
 
     const [result, end] = parseExprPrefix(0);
     if (end !== str.length) throw new Error('illegal input string: ' + str);
+    return result;
+}
+
+function from_display_simple(s: string): Mountain {
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + s);
+    }
+
+    function skip_spaces(): void {
+        while (i < s.length && s[i] === ' ') i++;
+    }
+
+    function parse_sep(): Sep {
+        let count = 0;
+        while (i < s.length && s[i] === ',') {
+            count++;
+            i++;
+        }
+        return count === 0 ? 0 : count - 1;
+    }
+
+    function parse_entry(): Entry {
+        const sep = parse_sep();
+        let v: number;
+        if (i < s.length && s[i] === '(') {
+            i++;
+            const start = i;
+            while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+            if (start === i) error();
+            if (i >= s.length || s[i] !== ')') error();
+            v = parseInt(s.substring(start, i), 10);
+            i++;
+        } else if (i < s.length && s[i] >= '0' && s[i] <= '9') {
+            v = s.charCodeAt(i) - 48;
+            i++;
+        } else {
+            error();
+        }
+        return [v, sep];
+    }
+
+    function parse_column(): Column {
+        const col: Column = [];
+        while (i < s.length && s[i] !== ' ') {
+            col.push(parse_entry());
+        }
+        return col;
+    }
+
+    function parse_expr(): Mountain {
+        const result: Mountain = [];
+        while (true) {
+            skip_spaces();
+            if (i >= s.length) break;
+            if (s[i] === '0' && (i + 1 >= s.length || s[i + 1] === ' ')) {
+                result.push([]);
+                i++;
+                continue;
+            }
+            result.push(parse_column());
+        }
+        return result;
+    }
+
+    skip_spaces();
+    if (i + 5 <= s.length && s.substring(i, i + 5) === 'Limit') {
+        i += 5;
+        skip_spaces();
+        if (i !== s.length) error();
+        return INFINITY();
+    }
+
+    const result = parse_expr();
+    skip_spaces();
+    if (i !== s.length) error();
     return result;
 }
 
@@ -397,7 +481,7 @@ function compute_mountain_diagram(expr: Mountain, current_equiv?: string): Mount
     if (is_infinity(expr) || expr.length === 0) return undefined;
 
     const m = fill_ghost(expr);
-    const m_display = current_equiv === 'layer' ? convert_to_layer(expr) : expr;
+    const m_display = current_equiv?.includes('layer') ? convert_to_layer(expr) : expr;
     const V = m.map(column_verticals);
 
     const vertical_set = new DisplaySet<Vertical>(vertical_display);
@@ -433,7 +517,7 @@ function compute_mountain_diagram(expr: Mountain, current_equiv?: string): Mount
         entries[i][0] = '*';
         for (let j = 0; j < m[i].length; j++) {
             const vj = vertical_index.get(V[i][j])!;
-            entries[i][vj] = j < m_display[i].length ? entry_display(m_display[i][j]) : '*';
+            entries[i][vj] = j < m_display[i].length ? entry_display(m_display[i][j], false) : '*';
             const [pi, pj] = parent(m, V, [i, j]);
             if (pi !== -1) {
                 const pvj = pj === 0 ? 0 : vertical_index.get(V[pi][pj - 1])!;
@@ -469,17 +553,28 @@ export function n_MN(n: number): NotationDefinition<Mountain> {
         id: n + '-MN',
         name: 'non triangular' + n + 'MN',
         simple_name: n + 'MN',
-        display: { plain: display, from_display: from_display },
+        display: {
+            plain: (m) => mountain_display(m, false),
+            from_display: from_display,
+        },
         display_equiv: {
             layer: {
-                plain: (m) => display(convert_to_layer(m)),
+                plain: (m) => mountain_display(convert_to_layer(m), false),
                 from_display: (str) => convert_from_layer(from_display(str)),
+            },
+            simple: {
+                plain: (m) => mountain_display(m, true),
+                from_display: from_display_simple,
+            },
+            'layer simple': {
+                plain: (m) => mountain_display(convert_to_layer(m), true),
+                from_display: (s) => convert_from_layer(from_display_simple(s)),
             },
         },
         draw_diagram: draw_diagram_control,
-        ...MN_FS_variants(expand, is_infinity, NT_infinity_FS(n), is_limit, display),
+        ...MN_FS_variants(expand, is_infinity, NT_infinity_FS(n), is_limit, to_data_key),
         is_limit,
         compare,
-        init: () => [Limit_expr(), []],
+        init: () => [INFINITY(), []],
     };
 }

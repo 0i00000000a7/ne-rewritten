@@ -73,6 +73,7 @@ function compute_parents(
     n: number,
     stack: Column[] = [],
     parent_stack: ColumnParents[] = [],
+    forbidden_stack: number[] = [],
 ): ExprData<ColumnParents> {
     const lS0 = stack.length;
     let result: ExprData<ColumnParents> = [];
@@ -93,12 +94,14 @@ function compute_parents(
         }
         let p = iS;
         while (p >= 0) {
-            if (compare(stack[p][1], col[1]) < 0) break;
+            if (compare(stack[p][1], col[1]) < 0 && !forbidden_stack.includes(p)) break;
             p = n === 0 ? p - 1 : parent_stack[p][n - 1];
         }
         result_i[n] = p;
 
-        result[i] = [result_i, compute_parents(col[1], n, stack, parent_stack)];
+        forbidden_stack.push(iS);
+        result[i] = [result_i, compute_parents(col[1], n, stack, parent_stack, forbidden_stack)];
+        forbidden_stack.pop();
     }
     stack.splice(lS0);
     parent_stack.splice(lS0);

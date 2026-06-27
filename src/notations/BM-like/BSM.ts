@@ -8,7 +8,7 @@ function expand(m: Expr, index: number): Expr {
         const str = x + ',' + y;
         if (cache[str] !== undefined) return cache[str];
         let p: number;
-        for (p = x; (p = y ? parent(p, y - 1, cache) : p - 1) >= 0; ) {
+        for (p = x; (p = y ? parent(p, y - 1, cache) : p - 1) >= 0;) {
             if (m[p][y] < m[x][y]) break;
         }
         return (cache[str] = p);
@@ -74,7 +74,7 @@ function expand(m: Expr, index: number): Expr {
     const ascend_cache: Record<string, boolean> = {};
     const special_roots: number[] = [];
     const roots: number[] = [];
-    for (let n = end_col; n >= 0; ) {
+    for (let n = end_col; n >= 0;) {
         special_roots.push((n = parent(n, LNZ, parent_cache)));
     }
     for (let n = special_roots[0]; n >= 0; n = LNZ ? parent(n, LNZ - 1, parent_cache) : n - 1) {

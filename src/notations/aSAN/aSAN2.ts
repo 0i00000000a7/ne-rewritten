@@ -53,10 +53,10 @@ var trans = (L: any): any => {
 var search = (L: any): any => {
     var T = trans(L),
         n = L.length - 1;
-    for (var a = n; --a >= 0 && aSAN_compare(L[n], L[a]) <= 0; );
+    for (var a = n; --a >= 0 && aSAN_compare(L[n], L[a]) <= 0;);
     var t = Math.max(...T);
     if (t >= 0 && t >= a) {
-        for (var u = T.length; --u >= 0 && !(aSAN_compare(L[t], L[T[u]]) > 0); );
+        for (var u = T.length; --u >= 0 && !(aSAN_compare(L[t], L[T[u]]) > 0););
         if (u >= 0) {
             for (var v = T[u]; v <= t; ++v) {
                 if (aSAN_compare(L[v], L[t]) >= 0) return v;
@@ -84,7 +84,7 @@ var aSAN_FS = (A: any, FSterm: any): any => {
         m = search(L),
         f = (n: any) => changeL(L, m, n),
         result = FSterm + 1;
-    for (var n = FSterm; n--; ) {
+    for (var n = FSterm; n--;) {
         result = f(result);
     }
     if (m > 0) {

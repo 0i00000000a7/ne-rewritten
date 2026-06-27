@@ -128,7 +128,7 @@ watch(
 </script>
 
 <template>
-    <ModalDialog :show="show" title="Config Notations" @close="cancel">
+    <ModalDialog :show="show" :title="t('selector.title')" @close="cancel">
         <div class="nota-selector">
             <div class="nota-left">
                 <div v-for="cat in categories" :key="cat.id" class="cat-block">

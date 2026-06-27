@@ -229,13 +229,13 @@ function LMN_FS(x: Expr, index: number): Expr {
         }
         if (x1 === xn1) {
             let res: Expr = 0;
-            for (let i = index; i--; ) res = [false, deepcopy(xn1), res];
+            for (let i = index; i--;) res = [false, deepcopy(xn1), res];
             return cut0(res);
         } else {
             let prev: NExpr = lx.length === 2 ? x1 : lx[lx.length - 3];
             while (prev[2] !== xn1) prev = prev[2] as NExpr;
             prev[2] = 0;
-            for (let i = index; i--; ) prev[2] = [false, deepcopy(xn1), prev[2]];
+            for (let i = index; i--;) prev[2] = [false, deepcopy(xn1), prev[2]];
             return cut0(x1);
         }
     }

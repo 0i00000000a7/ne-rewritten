@@ -92,7 +92,7 @@ var aSAN_FS = (A: any, FSterm: any): any => {
         m = search(L),
         f = (n: any) => changeL(L, m, n),
         result = FSterm + 1;
-    for (var n = FSterm; n--; ) {
+    for (var n = FSterm; n--;) {
         result = f(result);
     }
     if (m > 0) {

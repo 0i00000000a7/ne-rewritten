@@ -45,7 +45,7 @@ var changeL = (L: any, a: any, b: any): any => {
 };
 var search = (L: any): any => {
     var n = L.length - 1;
-    for (var a = n; --a >= 0 && aSAN_compare(L[n], L[a]) <= 0; );
+    for (var a = n; --a >= 0 && aSAN_compare(L[n], L[a]) <= 0;);
     return a + 1;
 };
 var Standard = (A: any): any => {
@@ -62,7 +62,7 @@ var aSAN_FS = (A: any, FSterm: any): any => {
         m = search(L),
         f = (n: any) => changeL(L, m, n),
         result = FSterm + 1;
-    for (var n = FSterm; n--; ) {
+    for (var n = FSterm; n--;) {
         result = f(result);
     }
     if (m > 0) {

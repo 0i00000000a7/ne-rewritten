@@ -7,7 +7,7 @@ export var aSAN_compare = (a: any, b: any): number => {
     if (a.length > b.length) return 1;
     if (a.length < b.length) return -1;
     var tmp: any, k: any;
-    for (k = a.length; k--; ) {
+    for (k = a.length; k--;) {
         tmp = aSAN_compare(a[k], b[k]);
         if (tmp !== 0) return tmp;
     }

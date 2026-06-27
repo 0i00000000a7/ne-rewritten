@@ -25,7 +25,7 @@ var get_n = (term: any, index: any): any => {
         i: any,
         a = Copy(term),
         a1index = index.slice();
-    for (i = 0; i < a1index.length; ) {
+    for (i = 0; i < a1index.length;) {
         if (a1index[i] === 0) {
             if (i === 0) {
                 a = a[0];

@@ -116,13 +116,13 @@ var LON_FS = (x: any, FSterm: any): any => {
         }
         if (x2 === xn1) {
             res = 0;
-            for (i = FSterm; i--; ) res = [false, Copy(xn1), res];
+            for (i = FSterm; i--;) res = [false, Copy(xn1), res];
             return cut0(res);
         } else {
             prev = lx.length === 2 ? x2 : lx[lx.length - 3];
             while (prev[2] !== xn1) prev = prev[2];
             prev[2] = 0;
-            for (i = FSterm; i--; ) prev[2] = [false, Copy(xn1), prev[2]];
+            for (i = FSterm; i--;) prev[2] = [false, Copy(xn1), prev[2]];
             return cut0(x2);
         }
     }

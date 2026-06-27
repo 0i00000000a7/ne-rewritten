@@ -67,7 +67,7 @@ function to_sequence(mountain: Mountain): Expr {
 function vertical_compare(a: Vertical, b: Vertical): number {
     if (a.length > b.length) return 1;
     if (a.length < b.length) return -1;
-    for (let i = a.length; i--; ) {
+    for (let i = a.length; i >= 0; i--) {
         if (a[i] > b[i]) return 1;
         if (a[i] < b[i]) return -1;
     }
@@ -112,8 +112,8 @@ function draw_mountain(mountain: Mountain): Mountain {
         while (true) {
             const entry = column[0];
             if (entry.value === 1) break;
-            let parent: Entry;
-            for (parent = entry; true; ) {
+            let parent = entry;
+            while (true) {
                 let up = parent.left_down!;
                 while (up.right_up && vertical_compare(up.right_up.y, parent.y) <= 0) up = up.right_up;
                 parent = up;

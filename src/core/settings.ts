@@ -1,5 +1,12 @@
 export type Variant = 'FS' | 'FS_alter' | 'FS_short';
 
+export interface ExpandSettings {
+    FS_index: number;
+    notation_id: string;
+    notation_equiv: string | undefined;
+    variant: Variant;
+}
+
 export interface Settings {
     current_notation_id: string;
     tier: number;
@@ -16,6 +23,7 @@ export interface Settings {
     language: 'zh' | 'en';
     shown_notations: string[];
     hidden_notations: string[];
+    expand: ExpandSettings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,4 +42,5 @@ export const DEFAULT_SETTINGS: Settings = {
     language: 'zh',
     shown_notations: [],
     hidden_notations: [],
+    expand: { FS_index: 1, notation_id: 'omega', notation_equiv: undefined, variant: 'FS_short' },
 };

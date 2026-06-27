@@ -9,6 +9,7 @@ import { I18N_KEY } from '@/composables/use_i18n.ts';
 import { expand_item } from '@/core/expander';
 import { focus_node, focus_node_input, set_last_focus } from '@/composables/use_focus_tracker.ts';
 import { use_diagram } from '@/composables/use_diagram.ts';
+import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
 
 const props = defineProps<{
     node: TreeNode<T>;
@@ -138,6 +139,10 @@ function on_keydown(e: KeyboardEvent) {
     } else if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault();
         do_expand(1, true);
+    } else if (e.key.toLowerCase() === 'e' && e.ctrlKey) {
+        e.preventDefault();
+        const ed_expand = use_expand_dialog();
+        ed_expand.open(ed.analysis![0] ?? '', settings.expand);
     } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
         e.preventDefault();
         ed.hide_child = !ed.hide_child;

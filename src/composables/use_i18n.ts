@@ -2,7 +2,7 @@ import type { InjectionKey } from 'vue';
 
 export type Language = 'zh' | 'en';
 
-export const I18N_KEY: InjectionKey<(key: string) => string> = Symbol('i18n');
+export const I18N_KEY: InjectionKey<(key: string, params?: Record<string, string>) => string> = Symbol('i18n');
 
 const messages: Record<Language, Record<string, string>> = {
     zh: {
@@ -47,8 +47,7 @@ const messages: Record<Language, Record<string, string>> = {
         'settings.less': '▲ 收起',
         'notation-tree.empty': '未选择记号',
         'notation-tree.fundamental-sequence': ' 基本列:',
-        'autosave.last-save.1': '保存于 ',
-        'autosave.last-save.2': ' 前',
+        'autosave.last-save': '保存于 {{time}} 前',
         'selector.title': '配置记号',
         'selector.config-label': '显示的记号:',
         'selector.config-btn': '配置',
@@ -59,6 +58,18 @@ const messages: Record<Language, Record<string, string>> = {
         'selector.empty': '未选择任何记号',
         'selector.confirm': '确定',
         'selector.cancel': '取消',
+        'expand.title': '展开表达式',
+        'expand.text': '表达式',
+        'expand.fs-index': '基本列项数',
+        'expand.notation': '记号',
+        'expand.equiv': '等价表示',
+        'expand.fs-variant': '展开变体',
+        'expand.preview-hint': '按 Enter 填入',
+        'expand.fill': '填入 (Enter)',
+        'expand.cancel': '取消 (Esc)',
+        'expand.error-parse': '解析错误：表达式语法不正确',
+        'expand.error-no-from-display': '记号 "{{name}}" 不支持 from_display',
+        'expand.error-fs': '基本列计算失败',
     },
     en: {
         'notation-name.mode-label': 'Notation name mode:',
@@ -112,12 +123,31 @@ const messages: Record<Language, Record<string, string>> = {
         'selector.empty': 'No notation selected',
         'selector.confirm': 'OK',
         'selector.cancel': 'Cancel',
-        'autosave.last-save.1': 'saved ',
-        'autosave.last-save.2': ' ago',
+        'autosave.last-save': 'saved {{time}} ago',
+        'expand.title': 'Expand expression',
+        'expand.text': 'Expression',
+        'expand.fs-index': 'FS index',
+        'expand.notation': 'Notation',
+        'expand.equiv': 'Equiv',
+        'expand.fs-variant': 'FS variant',
+        'expand.preview-hint': 'Enter to fill',
+        'expand.fill': 'Fill (Enter)',
+        'expand.cancel': 'Cancel (Esc)',
+        'expand.error-parse': 'Parse error: invalid expression syntax',
+        'expand.error-no-from-display': 'The notation "{{name}}" does not support from_display',
+        'expand.error-fs': 'FS computation failed',
     },
 };
 
-export function create_t(lang: Language): (key: string) => string {
+export function create_t(lang: Language): (key: string, params?: Record<string, string>) => string {
     const dict = messages[lang] ?? messages.en;
-    return (key: string) => dict[key] ?? key;
+    return (key: string, params?: Record<string, string>) => {
+        let msg = dict[key] ?? key;
+        if (params) {
+            for (const [k, v] of Object.entries(params)) {
+                msg = msg.replace(`{{${k}}}`, v);
+            }
+        }
+        return msg;
+    };
 }

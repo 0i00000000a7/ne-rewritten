@@ -14,9 +14,11 @@ import DiagramViewer from '@/components/DiagramViewer.vue';
 import HotkeyDialog from '@/components/HotkeyDialog.vue';
 import NotationSelector from '@/components/NotationSelector.vue';
 import { create_t, I18N_KEY } from '@/composables/use_i18n';
+import ExpandDialog from '@/components/ExpandDialog.vue';
+import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
 
 const settings = inject(SETTINGS_KEY)!;
-const t = (key: string) => create_t(settings.language)(key);
+const t = (key: string, params?: Record<string, string>) => create_t(settings.language)(key, params);
 provide(I18N_KEY, t);
 const {
     diagram,
@@ -27,6 +29,7 @@ const {
     hide,
     dispatch_action: dispatch_diagram_action,
 } = use_diagram();
+const expand_dialog_state = use_expand_dialog();
 const settings_collapsed = ref(true);
 const show_notation_selector = ref(false);
 const is_flashing = ref(false);
@@ -511,10 +514,11 @@ onUnmounted(() => {
             <DiagramViewer :diagram="diagram" />
         </div>
         <div v-if="save_indicator" class="save-indicator">
-            {{ t('autosave.last-save.1') }}{{ save_indicator }}{{ t('autosave.last-save.2') }}
+            {{ t('autosave.last-save', { time: save_indicator }) }}
         </div>
         <NotationSelector :show="show_notation_selector" @close="show_notation_selector = false" />
         <HotkeyDialog :show="show_hotkeys" @close="show_hotkeys = false" />
+        <ExpandDialog :show="expand_dialog_state.visible.value" @close="expand_dialog_state.close()" />
     </div>
 </template>
 

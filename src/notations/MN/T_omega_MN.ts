@@ -395,7 +395,10 @@ export const T_omega_MN: NotationDefinition<Expr> = {
     name: 'TωMN',
     display: { plain: mountain_display, from_display: mountain_from_display },
     display_equiv: {
-        layer: (m) => mountain_display(convert_to_layer(m)),
+        layer: {
+            plain: (m) => mountain_display(convert_to_layer(m)),
+            from_display: (s) => convert_from_layer(mountain_from_display(s)),
+        },
     },
     is_limit: mountain_is_limit,
     compare: mountain_compare,

@@ -240,8 +240,8 @@ function ascension_thresholds(
     return result;
 }
 
-function ascend_vector(v: number[], A: number, V: number[], w: number): number[] {
-    return v.map((x, i) => x + (i < A ? V[i] * w : 0));
+function ascend_vector(v: number[], A: number, V: number[], w: number, n: number, u: boolean): number[] {
+    return v.map((x, i) => x + (i < A && (!u || i !== n - 1) ? V[i] * w : 0));
 }
 
 function ascend_replace(
@@ -251,6 +251,8 @@ function ascend_replace(
     A: ExprData<number | undefined>,
     V: number[],
     w: number,
+    n: number,
+    u: boolean,
 ): Expr {
     let result: Expr = [];
     for (let i = 0; i < e.length; i++) {
@@ -261,12 +263,12 @@ function ascend_replace(
             const Ai = A[i][0];
             const higher_right = col[1].length - 1;
 
-            const new_col_lower = ascend_vector(col[0], Ai ?? 0, V, w);
+            const new_col_lower = ascend_vector(col[0], Ai ?? 0, V, w, n, u);
             const new_tail_layer = i !== e.length - 1 || tail_layer === undefined ? undefined : tail_layer - 1;
             result[i] = [
                 new_col_lower,
                 col[1].map((x, ix) =>
-                    ascend_replace(x, tail, ix === higher_right ? new_tail_layer : undefined, A[i][1][ix], V, w),
+                    ascend_replace(x, tail, ix === higher_right ? new_tail_layer : undefined, A[i][1][ix], V, w, n, u),
                 ),
             ];
         }
@@ -295,7 +297,7 @@ function FS_special(e: Expr, tail_layer: number, index: number): Expr {
     ];
 }
 
-function FS(e: Expr, index: number, n: number): Expr {
+function FS(e: Expr, index: number, n: number, u: boolean): Expr {
     if (is_infinity(e)) return infinity_FS(index, n);
     if (e.length === 0) return e;
     if (!is_limit(e)) return e.slice(0, -1);
@@ -330,27 +332,136 @@ function FS(e: Expr, index: number, n: number): Expr {
 
     let result: Expr = [];
     for (let w = index; w > 0; w--) {
-        result = ascend_replace(copy_part, result, t_layer - r_layer, copy_part_A, V, w);
+        result = ascend_replace(copy_part, result, t_layer - r_layer, copy_part_A, V, w, n, u);
         if (b === n) {
-            result[0][1] = tail_top.map((x, ix) => ascend_replace(x, [], undefined, tail_top_A[ix], V, w - 1));
+            result[0][1] = tail_top.map((x, ix) => ascend_replace(x, [], undefined, tail_top_A[ix], V, w - 1, n, u));
         }
     }
-    result = ascend_replace(e, result, t_layer, A, V, 0);
+    result = ascend_replace(e, result, t_layer, A, V, 0, n, u);
+    return result;
+}
+
+function from_display(s: string, n: number): Expr {
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + s);
+    }
+
+    function skip_spaces(): void {
+        while (i < s.length && s[i] === ' ') i++;
+    }
+
+    function parse_number(): number {
+        skip_spaces();
+        const start = i;
+        while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+        if (start === i) error();
+        return parseInt(s.substring(start, i), 10);
+    }
+
+    function parse_higher(): Expr {
+        if (i >= s.length || (s[i] !== '*' && s[i] !== '∗')) error();
+        i++;
+        skip_spaces();
+        if (i < s.length && s[i] === '^') {
+            i++;
+            return parse_expr();
+        }
+        return [];
+    }
+
+    function parse_column(): Column {
+        skip_spaces();
+        if (i >= s.length || s[i] !== '(') error();
+        i++;
+
+        const numbers: number[] = [];
+        const higher: Expr[] = [];
+
+        skip_spaces();
+        while (i < s.length && s[i] !== ')' && s[i] >= '0' && s[i] <= '9' && numbers.length < n) {
+            numbers.push(parse_number());
+            skip_spaces();
+            if (i < s.length && s[i] === ',') i++;
+            skip_spaces();
+        }
+
+        while (i < s.length && s[i] !== ')') {
+            skip_spaces();
+            if (s[i] === '*' || s[i] === '∗') {
+                if (numbers.length !== n) error();
+                higher.push(parse_higher());
+            } else {
+                error();
+            }
+            skip_spaces();
+            if (i < s.length && s[i] === ',') i++;
+        }
+
+        if (i >= s.length) error();
+        i++;
+
+        const arr = numbers.slice(0, n);
+        while (arr.length < n) arr.push(0);
+        return [arr, higher];
+    }
+
+    function parse_expr(): Expr {
+        const result: Expr = [];
+        skip_spaces();
+        while (i < s.length && s[i] === '(') {
+            result.push(parse_column());
+            skip_spaces();
+        }
+        return result;
+    }
+
+    skip_spaces();
+    if (i + 5 <= s.length && s.substring(i, i + 5) === 'Limit') {
+        i += 5;
+        skip_spaces();
+        if (i !== s.length) error();
+        return INFINITY();
+    }
+
+    const result = parse_expr();
+    skip_spaces();
+    if (i !== s.length) error();
     return result;
 }
 
 export function BT1_Minus1_Y_nSS(n: number): NotationDefinition<Expr> {
     return {
-        id: "bt'--1y-" + (n + 1) + 'ss',
-        name: "BT'(-1)Y-" + (n + 1) + 'SS',
+        id: "bt'*--1y-" + (n + 1) + 'ss',
+        name: "BT'*(-1)Y-" + (n + 1) + 'SS',
 
         display: {
             plain: (e) => display(e, false),
             html: (e) => display(e, true),
+            from_display: (s) => from_display(s, n),
         },
         is_limit: (e) => is_limit(e),
         compare,
-        FS: (e, index) => FS(e, index, n),
+        FS: (e, index) => FS(e, index, n, true),
+
+        init: () => [INFINITY(), []],
+    };
+}
+
+export function BT2_Minus1_Y_nSS(n: number): NotationDefinition<Expr> {
+    return {
+        id: 'bt*--1y-' + n + 'ss',
+        name: 'BT*(-1)Y-' + n + 'SS',
+
+        display: {
+            plain: (e) => display(e, false),
+            html: (e) => display(e, true),
+            from_display: (s) => from_display(s, n),
+        },
+        is_limit: (e) => is_limit(e),
+        compare,
+        FS: (e, index) => FS(e, index, n, false),
 
         init: () => [INFINITY(), []],
     };

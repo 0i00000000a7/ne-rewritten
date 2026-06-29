@@ -10,10 +10,8 @@ import type { Diagram } from '@/core/diagram_types';
 import { Y_FS_variants } from '@/notations/FS_util.ts';
 import { draw_mountain_diagram, type MountainDiagramData } from '@/notations/draw_mountain_util.ts';
 
-/** Bashicu 矩阵表达式：number[][]，其中 [[Infinity]] 表示极限。 */
 export type Expr = number[][];
 
-/** 判断表达式是否表示极限（[[Infinity]]）。 */
 export function is_infinity(a: Expr): boolean {
     return ('' + a).startsWith('Infinity');
 }
@@ -22,7 +20,6 @@ export function is_limit(a: Expr): boolean {
     return a.length > 0 && a[a.length - 1].length > 0;
 }
 
-/** 矩阵比较：先处理 Infinity，再按字典序逐列比较。 */
 export function compare(a: Expr, b: Expr): number {
     if (is_infinity(a) || is_infinity(b)) {
         return boolean_compare(is_infinity(a), is_infinity(b));
@@ -30,16 +27,11 @@ export function compare(a: Expr, b: Expr): number {
     return lex_compare(a, b, lex_compare_by(number_compare));
 }
 
-/** 矩阵显示为字符串。空列显示为 (0)。 */
 export function display(a: Expr): string {
     if (is_infinity(a)) return 'Limit';
     return a.map((col) => '(' + (col.length > 0 ? col.map((e) => '' + e).join(',') : '0') + ')').join('');
 }
 
-/**
- * 解析 display 的输出，恢复为矩阵。
- * 采用递归向下风格，内部 parse_column / parse_expression 返回 [result, end]。
- */
 export function from_display(s: string): Expr {
     if (s === 'Limit') return [[Infinity]];
     s = s.trim();
@@ -105,12 +97,10 @@ export function from_display(s: string): Expr {
     return normalize(result);
 }
 
-/** 判断矩阵是否为极限（无限或最后一列首行非零）。 */
 export function matrix_is_limit(a: Expr): boolean {
     return is_infinity(a) || (a.length > 0 && a[a.length - 1][0] > 0);
 }
 
-/** 返回每列末尾不含 0 的标准形式。 */
 function normalize(m: Expr): Expr {
     return m.map((col) => {
         let end = col.length;
@@ -119,10 +109,6 @@ function normalize(m: Expr): Expr {
     });
 }
 
-/**
- * 计算矩阵每列每行的父节点索引。
- * 返回 P[i][j] 表示第 i 列第 j 行的父节点所在列号。
- */
 function parents(m: Expr): number[][] {
     const result: number[][] = [];
     for (let i = 0; i < m.length; i++) {
@@ -142,14 +128,6 @@ function parents(m: Expr): number[][] {
     return result;
 }
 
-/**
- * 计算各列的阈值 A[i]。
- * 一项在复制时递增当且仅当它的祖先项经过根列。
- * A[i] 是列 i 中首个祖先链不经过根列的行号（0-based）。
- *
- * 判定：行 j 的祖先不经过根列，当 P[i][j] 无定义、
- * P[i][j] < r、或其自身的该行已不递增。
- */
 function ascending_threshold(P: number[][], r: number, j_max: number): number[] {
     const result: number[] = [];
     result[r] = j_max;
@@ -169,7 +147,6 @@ function ascending_threshold(P: number[][], r: number, j_max: number): number[] 
     return result;
 }
 
-/** BM4 展开算法。展开结果自动标准化。 */
 function expand(m: Expr, index: number): Expr {
     if (m.length === 0) return m;
 
@@ -208,19 +185,12 @@ function infinity_FS(n: number): Expr {
     return [[], Array.from({ length: n + 1 }, () => 1)];
 }
 
-/** 基础数列展开缓存。 */
 interface MountainData {
     m: Expr;
     M: number[][];
     P: number[][];
 }
 
-/**
- * 计算山脉图数值矩阵。
- * mountain[i][j] = up + left，其中 up 是上一行的值，left 是父节点的值。
- * 底部行 (j=0) 即为 0Y 序列。
- * 值为 0 的 BM 行已被省略，绘制山脉图时补充完整。
- */
 function compute_mountain(m: Expr): MountainData {
     const P = parents(m);
     const h = Math.max(...m.map((col) => col.length));
@@ -241,10 +211,6 @@ function compute_mountain(m: Expr): MountainData {
     return { m, M, P };
 }
 
-/**
- * 将 Bashicu 矩阵转换为 0-Y 数列。
- * 用于显示等价表示。
- */
 export function convert_to_0Y(m: Expr): number[] {
     return compute_mountain(m).M.map((col) => col[0]);
 }
@@ -291,12 +257,99 @@ export function from_display_0Y(str: string): Expr {
     return compute_0Y_mountain(result).m;
 }
 
+export function display_simple(m: Expr): string {
+    if (is_infinity(m)) return 'Limit';
+    return m
+        .map((col) => {
+            if (col.length === 0) return '0';
+            return col
+                .map((e) => {
+                    let s = '' + e;
+                    return s.length >= 2 ? '(' + s + ')' : s;
+                })
+                .join('');
+        })
+        .join(' ');
+}
+
+export function from_display_simple(s: string): Expr {
+    if (s === 'Limit') return [[Infinity]];
+
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + s);
+    }
+
+    function skip_spaces(): void {
+        while (i < s.length && s[i] === ' ') i++;
+    }
+
+    function parse_value(): number {
+        if (i < s.length && s[i] === '(') {
+            i++;
+            const start = i;
+            while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+            if (start === i) error();
+            if (i >= s.length || s[i] !== ')') error();
+            const v = parseInt(s.substring(start, i), 10);
+            i++;
+            return v;
+        }
+        if (i < s.length && s[i] >= '0' && s[i] <= '9') {
+            const v = s.charCodeAt(i) - 48;
+            i++;
+            return v;
+        }
+        error();
+    }
+
+    function parse_entry(): number {
+        return parse_value();
+    }
+
+    function parse_column(): Expr[number] {
+        const col: Expr[number] = [];
+        while (i < s.length && s[i] !== ' ') {
+            col.push(parse_entry());
+        }
+        return col;
+    }
+
+    function parse_expr(): Expr {
+        const result: Expr = [];
+        while (i < s.length) {
+            skip_spaces();
+            if (i >= s.length) break;
+            if (s[i] === '0' && (i + 1 >= s.length || s[i + 1] === ' ')) {
+                result.push([]);
+                i++;
+                continue;
+            }
+            result.push(parse_column());
+        }
+        return result;
+    }
+
+    skip_spaces();
+    if (i + 5 <= s.length && s.substring(i, i + 5) === 'Limit') {
+        i += 5;
+        skip_spaces();
+        if (i !== s.length) error();
+        return [[Infinity]];
+    }
+
+    const result = parse_expr();
+    skip_spaces();
+    if (i !== s.length) error();
+    return result;
+}
+
 export interface DiagramData {
     current_equiv: '0Y' | 'BMS' | undefined;
     invert_vertical?: boolean;
 }
 
-/** 计算层：将 BM 的 Expr 转为 MountainDiagramData。 */
 function compute_bm_mountain_diagram(
     m: Expr,
     current_equiv: DiagramData['current_equiv'] & string,
@@ -370,6 +423,10 @@ export const BM4: NotationDefinition<Expr> = {
         '0Y': {
             plain: display_0Y,
             from_display: from_display_0Y,
+        },
+        simple: {
+            plain: display_simple,
+            from_display: from_display_simple,
         },
     },
     is_limit: matrix_is_limit,

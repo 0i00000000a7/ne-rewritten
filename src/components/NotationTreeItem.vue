@@ -248,6 +248,7 @@ function on_blur() {
                 <input
                     ref="input_ref"
                     type="text"
+                    spellcheck="false"
                     v-model="analysis0"
                     @keydown="on_keydown"
                     @mousedown.stop

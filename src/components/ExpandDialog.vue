@@ -35,6 +35,7 @@ function on_fill() {
                 <input
                     type="text"
                     class="expand-text-input"
+                    spellcheck="false"
                     :placeholder="t('expand.text')"
                     v-model="ed.input_text.value"
                 />

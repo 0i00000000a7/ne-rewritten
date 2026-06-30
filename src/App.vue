@@ -366,6 +366,7 @@ onUnmounted(() => {
                         <input
                             ref="find_input"
                             type="text"
+                            spellcheck="false"
                             @focus="on_find_focus"
                             @input="on_find_input"
                             @keydown="on_find_keydown"

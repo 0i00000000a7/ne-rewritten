@@ -362,6 +362,7 @@ function ascend_replace(
                     ascend_replace(x, tail, ix === higher_right ? new_tail_layer : undefined, A[i].higher[ix], V, w),
                 ),
             };
+            if (result[i].higher.length === 0) result[i].mark = 0;
         }
     }
     return result;
@@ -378,7 +379,7 @@ function FS_star(e: Expr, tail_layer: number, index: number): Expr {
             ...e.slice(0, right),
             {
                 lower: e[right].lower,
-                mark: e[right].mark,
+                mark: higher_right === 0 && index === 0 ? 0 : e[right].mark,
                 higher: [...e[right].higher.slice(0, higher_right), ...Array.from({ length: index }, () => new_vert)],
             },
         ];

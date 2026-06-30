@@ -143,6 +143,11 @@ function on_keydown(e: KeyboardEvent) {
         e.preventDefault();
         const ed_expand = use_expand_dialog();
         ed_expand.open(ed.analysis![0] ?? '', settings.expand);
+    } else if (e.key.toLowerCase() === 'd' && e.ctrlKey) {
+        e.preventDefault();
+        console.log('DEBUG expr:', props.node.expr);
+        (window as any).__debug_expr = props.node.expr;
+        (window as any).__debug_notation = props.notation;
     } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
         e.preventDefault();
         ed.hide_child = !ed.hide_child;

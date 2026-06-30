@@ -19,6 +19,7 @@ const input_hotkeys = [
     { keys: 'Enter', desc: 'Expand current expression (tier 0)' },
     { keys: 'Shift+Enter', desc: 'Expand current expression (tier 1)' },
     { keys: 'Ctrl+E', desc: 'Expand analysis expression' },
+    { keys: 'Ctrl+D', desc: 'Debug: log raw expr to console' },
     { keys: 'Ctrl+H', desc: 'Hide/show children' },
     { keys: '↑ / ↓', desc: 'Move between inputs' },
     { keys: 'Ctrl+↑ / ↓', desc: 'Diagram operations' },

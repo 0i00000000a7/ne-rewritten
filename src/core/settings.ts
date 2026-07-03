@@ -18,6 +18,7 @@ export interface Settings {
     notation_name_mode: 'full' | 'simple';
     use_delete_to_clear: boolean;
     show_diagram: boolean;
+    show_latex: boolean;
     max_find_fs: number;
     equiv_active: Record<string, string | undefined>;
     equiv_hide_original: Record<string, boolean>;
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: Settings = {
     notation_name_mode: 'simple',
     use_delete_to_clear: true,
     show_diagram: true,
+    show_latex: false,
     max_find_fs: 10,
     equiv_active: {},
     equiv_hide_original: {},

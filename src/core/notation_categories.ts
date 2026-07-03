@@ -41,6 +41,7 @@ export function build_categories(): NotationCategory[] {
                 'bsm',
                 'upms',
                 'lpms',
+                'lptss',
                 '-1y-2ss',
                 '-1y-3ss',
                 '-1y-4ss',

@@ -17,6 +17,8 @@ import NotationSelector from '@/components/NotationSelector.vue';
 import { create_t, I18N_KEY } from '@/composables/use_i18n';
 import ExpandDialog from '@/components/ExpandDialog.vue';
 import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
+import { use_latex } from '@/composables/use_latex.ts';
+import LaTeXViewer from '@/components/LaTeXViewer.vue';
 
 const settings = inject(SETTINGS_KEY)!;
 const t = (key: string, params?: Record<string, string>) => create_t(settings.language)(key, params);
@@ -30,6 +32,7 @@ const {
     hide,
     dispatch_action: dispatch_diagram_action,
 } = use_diagram();
+const latex_state = use_latex();
 const expand_dialog_state = use_expand_dialog();
 const settings_collapsed = ref(true);
 const show_notation_selector = ref(false);
@@ -101,6 +104,16 @@ const tier_name = computed(() => {
 const file_input = ref<HTMLInputElement>();
 const show_hotkeys = ref(false);
 const show_tips = ref(false);
+
+function toggle_diagram() {
+    settings.show_diagram = !settings.show_diagram;
+    if (settings.show_diagram) settings.show_latex = false;
+}
+
+function toggle_latex() {
+    settings.show_latex = !settings.show_latex;
+    if (settings.show_latex) settings.show_diagram = false;
+}
 
 const ANALYSIS_STORAGE_PREFIX = 'ne-analysis-';
 let auto_save_timer: ReturnType<typeof setInterval> | null = null;
@@ -409,10 +422,14 @@ onUnmounted(() => {
                         @change="on_file_selected"
                     />
                 </div>
-                <div class="toolbar-row" v-if="notation?.draw_diagram">
-                    <label>
-                        <input type="checkbox" v-model="settings.show_diagram" />
+                <div class="toolbar-row">
+                    <label v-if="notation?.draw_diagram">
+                        <input type="checkbox" :checked="settings.show_diagram" @change="toggle_diagram" />
                         {{ t('diagram.show') }}
+                    </label>
+                    <label>
+                        <input type="checkbox" :checked="settings.show_latex" @change="toggle_latex" />
+                        {{ t('latex.show') }}
                     </label>
                 </div>
                 <div v-if="!settings_collapsed && equiv_options.length > 0" class="toolbar-row">
@@ -531,6 +548,15 @@ onUnmounted(() => {
         >
             <button class="diagram-close" @mousedown.stop="hide">✕</button>
             <DiagramViewer :diagram="diagram" />
+        </div>
+        <div
+            v-if="latex_state.visible.value && latex_state.html.value"
+            class="diagram-floating"
+            :style="{ left: latex_state.pos_x.value + 'px', top: latex_state.pos_y.value + 'px' }"
+            @mousedown.stop
+        >
+            <button class="diagram-close" @mousedown.stop="latex_state.hide()">✕</button>
+            <LaTeXViewer :html="latex_state.html.value" />
         </div>
         <div v-if="save_indicator" class="save-indicator">
             {{ t('autosave.last-save', { time: save_indicator }) }}

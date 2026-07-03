@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { TreeNode } from '@/core/tree';
 import { find_next, find_prev } from '@/core/tree';
 import type { TreeNodeExtra } from '@/core/extra';
@@ -10,6 +10,7 @@ import { expand_item } from '@/core/expander';
 import { focus_node, focus_node_input, set_last_focus } from '@/composables/use_focus_tracker.ts';
 import { use_diagram } from '@/composables/use_diagram.ts';
 import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
+import { use_latex } from '@/composables/use_latex.ts';
 
 const props = defineProps<{
     node: TreeNode<T>;
@@ -21,7 +22,9 @@ const input_ref = ref<HTMLInputElement | null>(null);
 const resize_span = ref<HTMLSpanElement | null>(null);
 const tooltip = ref(false);
 const tooltipFS = ref<string[]>([]);
+const focused = ref(false);
 const { show: show_diagram, hide: hide_diagram, dispatch_action: dispatch_diagram_action } = use_diagram();
+const { show: show_latex_viewer, hide: hide_latex_viewer } = use_latex();
 
 if (!props.node.extraData) props.node.extraData = {};
 const ed = props.node.extraData as TreeNodeExtra;
@@ -50,6 +53,18 @@ const expr_display_original = computed(() => {
     return settings.display_html_mode ? d.html : d.plain;
 });
 const expr_display = computed(() => equiv_display.value ?? expr_display_original.value);
+
+watch(analysis0, () => {
+    if (focused.value && settings.show_latex) {
+        const el = input_ref.value;
+        if (el) {
+            const r = el.getBoundingClientRect();
+            show_latex_viewer(analysis0.value, r.left, 60 + r.height);
+        }
+    } else {
+        hide_latex_viewer();
+    }
+});
 
 onMounted(() => {
     input_ref.value?.setAttribute('data-tree-path', node_path);
@@ -119,13 +134,25 @@ function on_keydown(e: KeyboardEvent) {
         if (target) focus_node(target.path ?? '' + target.index);
     } else if (e.key === 'ArrowUp' && e.ctrlKey) {
         e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'up', step: 1 });
+        dispatch_diagram_action({
+            type: 'scroll',
+            direction: 'up',
+            step: 1,
+        });
     } else if (e.key === 'ArrowDown' && e.ctrlKey) {
         e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'down', step: 1 });
+        dispatch_diagram_action({
+            type: 'scroll',
+            direction: 'down',
+            step: 1,
+        });
     } else if (e.key === 'ArrowLeft' && e.ctrlKey) {
         e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'left', step: 1 });
+        dispatch_diagram_action({
+            type: 'scroll',
+            direction: 'left',
+            step: 1,
+        });
     } else if (e.key === 'ArrowRight' && e.ctrlKey) {
         e.preventDefault();
         dispatch_diagram_action({
@@ -146,8 +173,8 @@ function on_keydown(e: KeyboardEvent) {
     } else if (e.key.toLowerCase() === 'd' && e.ctrlKey) {
         e.preventDefault();
         console.log('DEBUG expr:', props.node.expr);
-        (window as any).__debug_expr = props.node.expr;
-        (window as any).__debug_notation = props.notation;
+        (window as any).expr = props.node.expr;
+        (window as any).notation = props.notation;
     } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
         e.preventDefault();
         ed.hide_child = !ed.hide_child;
@@ -199,6 +226,7 @@ function caret_pixel_pos(input: HTMLInputElement, pos: number): number {
 }
 
 function on_focus(e: FocusEvent) {
+    focused.value = true;
     set_last_focus(node_path);
 
     const el = e.target as HTMLInputElement;
@@ -216,10 +244,19 @@ function on_focus(e: FocusEvent) {
     } else {
         hide_diagram();
     }
+
+    // trigger LaTeX for current value on focus (watcher fires on subsequent changes)
+    if (focused.value && settings.show_latex) {
+        show_latex_viewer(analysis0.value, r.left, 60 + r.height);
+    } else {
+        hide_latex_viewer();
+    }
 }
 
 function on_blur() {
+    focused.value = false;
     hide_diagram();
+    hide_latex_viewer();
 }
 </script>
 

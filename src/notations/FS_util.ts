@@ -45,6 +45,47 @@ export function Y_FS_variants<T>(
     return core;
 }
 
+export function sequence_FS_variants0<T>(
+    expand: (seq: T[], index: number) => T[],
+    is_infinity: (seq: T[]) => boolean,
+    infinity_FS: (index: number) => T[],
+    is_limit: (seq: T[]) => boolean,
+    display: (seq: T[]) => string,
+): Record<'FS' | 'FS_short', (seq: T[], index: number) => T[]> {
+    const data: Record<string, T[][]> = {};
+    const data_alter: Record<string, T[][]> = {};
+    const data_short: Record<string, boolean> = {};
+
+    const core = {
+        FS: (seq: T[], index: number): T[] => {
+            if (!seq.length) return [];
+            if (is_infinity(seq)) return infinity_FS(index);
+            if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
+            const data_key = display(seq);
+            if (data[data_key] === undefined) data[data_key] = [];
+            else if (data[data_key][index] !== undefined) return data[data_key][index];
+            return (data[data_key][index] = expand(seq, index));
+        },
+        FS_short: (seq: T[], index: number): T[] => {
+            if (!seq.length) return [];
+            if (is_infinity(seq)) return infinity_FS(index);
+            if (!is_limit(seq)) return seq.slice(0, seq.length - 1);
+            if (index === 0) return seq.slice(0, seq.length - 1);
+            if (index === 1) {
+                const result = core.FS(seq, 1);
+                return result.slice(0, seq.length);
+            }
+            const data_key = display(seq);
+            let d = data_short[data_key];
+            if (d === undefined) {
+                d = data_short[data_key] = core.FS(seq, 0).length !== seq.length;
+            }
+            return core.FS(seq, index - (d ? 2 : 1));
+        },
+    };
+    return core;
+}
+
 export function sequence_FS_variants<T>(
     expand: (seq: T[], index: number, shorter: boolean) => T[],
     is_infinity: (seq: T[]) => boolean,

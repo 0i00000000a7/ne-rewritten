@@ -1,6 +1,6 @@
 import type { NotationDefinition } from '@/utils';
-import { convert_to_0Y, from_display, from_display_0Y } from '@/notations/BM-like/BM.ts';
-import { sequence_FS_variants } from '@/notations/FS_util.ts';
+import { convert_to_0Y, display, from_display, from_display_0Y } from '@/notations/BM-like/BM.ts';
+import { sequence_FS_variants, sequence_FS_variants0 } from '@/notations/FS_util.ts';
 
 export type Expr = number[][];
 
@@ -103,11 +103,6 @@ const matrixCompare = (m1: Expr, m2: Expr): number => {
         if (cmp) return cmp;
     }
     return 0;
-};
-
-const display = (expr: Expr): string => {
-    if (pseudoInfinity(expr)) return 'Limit';
-    return expr.map((col: number[]) => '(' + col.join(',') + ')').join('');
 };
 
 const legal = (matrix: Expr): boolean => {
@@ -685,35 +680,28 @@ const lpmsSingle = (matrix: Expr): Expr => {
     return standardize(Mp, rows);
 };
 
+const lpmsFS = (expr: Expr, n: number): Expr => {
+    n = Math.max(0, Math.floor(n));
+    if (pseudoInfinity(expr)) return n === 0 ? [[]] : [zeroCol(n), onesCol(n)];
+    if (!legal(expr)) return [];
+    const rows = maxRows(expr);
+    const M = standardize(expr, rows);
+    if (M.length === 0) return [];
+    if (lastAllZero(M)) return M.slice(0, -1).map(cloneCol);
+    if (rows < 3 || M[M.length - 1][2] === 0) return bmsFS(M, n, rows);
+    return lpmsFS(lpmsSingle(M), n);
+};
+
+const lpmsLimit = (expr: Expr): boolean =>
+    pseudoInfinity(expr) || (legal(expr) && !lastAllZero(standardize(expr, maxRows(expr))));
+
 const lpmsInfinityFs = (n: number): Expr => {
     return [zeroCol(n), onesCol(n)];
 };
 
-const lpmsFS = (() => {
-    const cache = new Map<string, Expr>();
-    const inner = (expr: Expr, n: number): Expr => {
-        n = Math.max(0, Math.floor(n));
-        if (pseudoInfinity(expr)) return n === 0 ? [[]] : [zeroCol(n), onesCol(n)];
-        if (!legal(expr)) return [];
-        const rows = maxRows(expr);
-        const M = standardize(expr, rows);
-        if (M.length === 0) return [];
-        if (lastAllZero(M)) return M.slice(0, -1).map(cloneCol);
-        if (rows < 3 || M[M.length - 1][2] === 0) return bmsFS(M, n, rows);
-        return inner(lpmsSingle(M), n);
-    };
-    return (expr: Expr, n: number): Expr => {
-        if (pseudoInfinity(expr)) return inner(expr, n);
-        const key = display(standardize(expr, maxRows(expr))) + '[' + Math.max(0, Math.floor(n)) + ']';
-        if (cache.has(key)) return cloneMatrix(cache.get(key)!);
-        const out = inner(expr, n);
-        cache.set(key, cloneMatrix(out));
-        return out;
-    };
-})();
-
-const lpmsLimit = (expr: Expr): boolean =>
-    pseudoInfinity(expr) || (legal(expr) && !lastAllZero(standardize(expr, maxRows(expr))));
+const lptssInfinityFs = (n: number): Expr => {
+    return Array.from({ length: n + 1 }, (_, i) => [i, i, i]);
+};
 
 export const LPMS: NotationDefinition<Expr> = {
     id: 'lpms',
@@ -728,6 +716,25 @@ export const LPMS: NotationDefinition<Expr> = {
     },
     is_limit: lpmsLimit,
     compare: matrixCompare,
-    ...sequence_FS_variants(lpmsFS, pseudoInfinity, lpmsInfinityFs, lpmsLimit, display),
+    ...sequence_FS_variants0(lpmsFS, pseudoInfinity, lpmsInfinityFs, lpmsLimit, display),
+    init: () => [[[Infinity] as any], []],
+
+    debug: { lpmsFS },
+};
+
+export const LPTSS: NotationDefinition<Expr> = {
+    id: 'lptss',
+    name: 'Lifting projection TSS',
+    simple_name: 'LPTSS',
+    display: { plain: display, from_display },
+    display_equiv: {
+        LP0Y: {
+            plain: (m) => (pseudoInfinity(m) ? '1,ω' : '' + convert_to_0Y(m)),
+            from_display: from_display_0Y,
+        },
+    },
+    is_limit: lpmsLimit,
+    compare: matrixCompare,
+    ...sequence_FS_variants0(lpmsFS, pseudoInfinity, lptssInfinityFs, lpmsLimit, display),
     init: () => [[[Infinity] as any], []],
 };

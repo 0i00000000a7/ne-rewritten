@@ -75,7 +75,7 @@ const messages: Record<Language, Record<string, string>> = {
         'import.error': '遇到错误, 请查看控制台 (F12)。',
         'credit.bashicu': '由 Bashicu Hyodora 定义; 展开器来自原 NE 项目.',
         'credit.tbm': '由社区定义.',
-        'credit.yukito': '由 Yukito 定义; 展开器来自原 NE 项目; 山脉图绘制由 Yukito 给出.',
+        'credit.yukito': '由 Yukito 定义; 展开器来自原 NE 项目, 最初由 Yukito 给出; 山脉图绘制由 Yukito 给出.',
         'credit.den':
             '由 Hypcos 基于 test_alpha0 定义的 BLP 作出定义; 展开器来自原 NE 项目; 可视化方案由 test_alpha0 给出.',
         'credit.den23': '由 test_alpha0 基于 DEN 作出定义; 展开器来自原 NE 项目; 可视化方案由 test_alpha0 给出.',
@@ -182,7 +182,8 @@ const messages: Record<Language, Record<string, string>> = {
         'latex.show': 'Show LaTeX',
         'credit.bashicu': 'Defined by Bashicu Hyodora; expander from the original NE project.',
         'credit.tbm': 'Defined by the community.',
-        'credit.yukito': 'Defined by Yukito; expander from the original NE project; mountain diagram by Yukito.',
+        'credit.yukito':
+            'Defined by Yukito; expander from the original NE project, originally by Yukito; mountain diagram by Yukito.',
         'credit.den':
             'Defined by Hypcos based on BLP by test_alpha0; expander from the original NE project; visualization by test_alpha0.',
         'credit.den23':

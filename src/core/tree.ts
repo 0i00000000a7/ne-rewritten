@@ -1,4 +1,4 @@
-import type { NotationDefinition } from '@/utils';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export interface FsState {
     variant: string;

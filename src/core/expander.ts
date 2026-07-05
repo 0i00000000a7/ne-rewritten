@@ -1,6 +1,6 @@
-import type { NotationDefinition } from '@/utils';
 import type { TreeNode } from '@/core/tree';
 import { append_sibling, get_bound, prepend_child } from '@/core/tree';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 function resolve_fs<T>(notation: NotationDefinition<T>, variant: string): (expr: T, index: number) => T {
     switch (variant) {

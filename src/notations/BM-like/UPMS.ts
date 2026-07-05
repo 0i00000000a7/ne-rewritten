@@ -1,4 +1,3 @@
-import { NotationDefinition } from '@/utils.ts';
 import {
     convert_to_0Y,
     display,
@@ -10,6 +9,7 @@ import {
     from_display_simple,
 } from '@/notations/BM-like/BM.ts';
 import { sequence_FS_variants } from '@/notations/FS_util.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 const isPseudoInfinity = (expr: Expr): boolean => '' + expr === 'Infinity';
 const cloneColumn = (col: number[]) => col.slice();

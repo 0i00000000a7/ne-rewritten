@@ -1,4 +1,3 @@
-import type { NotationDefinition } from '@/utils';
 import {
     convert_to_0Y,
     display,
@@ -9,6 +8,7 @@ import {
     from_display_simple,
 } from '@/notations/BM-like/BM.ts';
 import { sequence_FS_variants0 } from '@/notations/FS_util.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type Expr = number[][];
 

@@ -1,5 +1,6 @@
 import { Expr, from_display, LMN_compare, LMN_display, LMN_is_limit } from '@/notations/OCN/LMN.ts';
-import type { NotationDefinition } from '@/utils.ts';
+
+import { NotationDefinition } from '@/notation-definition.ts';
 
 const data: any = {};
 var Copy = (x: any): any => (typeof x === 'number' ? x : [x[0]].concat(x.slice(1).map(Copy)));

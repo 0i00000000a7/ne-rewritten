@@ -1,5 +1,5 @@
-import type { NotationDefinition } from '@/utils.ts';
 import { aSAN_able, aSAN_base, aSAN_compare, aSAN_display } from './asan_helpers.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 const data: any = {};
 

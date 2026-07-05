@@ -1,4 +1,4 @@
-import { deepcopy, NotationDefinition } from '@/utils';
+import { deepcopy } from '@/utils';
 import {
     column_verticals,
     convert_to_layer,
@@ -19,6 +19,7 @@ import {
     vertical_increase,
 } from '@/notations/MN/Aw2MN2.ts';
 import { sequence_FS_variants } from '@/notations/FS_util.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 function subtract1(A0: Expr, V0: Vertical[][]): Expr {
     let rightmost = A0.length - 1;

@@ -1,6 +1,6 @@
-import type { DiagramControl, NotationDefinition } from '@/utils.ts';
 import { lex_compare, number_compare } from '@/utils.ts';
 import { draw_diagram_control as den2_diagram_control, type Expr as DEN2_Expr } from './DEN2.ts';
+import { DiagramControl, NotationDefinition } from '@/notation-definition.ts';
 
 type Row = number[];
 type Expr = Row[];

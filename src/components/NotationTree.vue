@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T">
 import type { TreeNode } from '@/core/tree';
-import type { NotationDefinition } from '@/utils';
 import NotationTreeItem from '@/components/NotationTreeItem.vue';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 defineProps<{
     root: TreeNode<T>;

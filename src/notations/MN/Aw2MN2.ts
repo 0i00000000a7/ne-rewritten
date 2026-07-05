@@ -1,5 +1,6 @@
-import { deepcopy, lex_compare, NotationDefinition } from '@/utils.ts';
+import { deepcopy, lex_compare } from '@/utils.ts';
 import { sequence_FS_variants } from '@/notations/FS_util.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type Sep = Expr;
 export type Vertical = Expr[];

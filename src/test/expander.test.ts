@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { expand_item } from '@/core/expander';
 import { init_dataset } from '@/core/tree';
-import type { NotationDefinition } from '@/utils';
+
+import { NotationDefinition } from '@/notation-definition.ts';
 
 // ===========================================================================
 // 数值节记

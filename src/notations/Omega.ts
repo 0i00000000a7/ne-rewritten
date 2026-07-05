@@ -1,4 +1,5 @@
-import { type NotationDefinition, number_compare } from '@/utils';
+import { number_compare } from '@/utils';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type Expr = number;
 

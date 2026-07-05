@@ -1,4 +1,4 @@
-import type { NotationDefinition } from '@/utils';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 const map = new Map<string, NotationDefinition<unknown>>();
 

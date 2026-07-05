@@ -1,16 +1,15 @@
 import {
     boolean_compare,
     deepcopy,
-    type DiagramControl,
     DisplayMap,
     DisplaySet,
     lex_compare,
-    NotationDefinition,
     number_compare,
     tuple_lex_compare,
 } from '@/utils.ts';
 import { MN_FS_variants } from '@/notations/FS_util.ts';
 import { draw_mountain_diagram, MountainDiagramData } from '@/notations/draw_mountain_util.ts';
+import { DiagramControl, NotationDefinition } from '@/notation-definition.ts';
 
 export type Sep = number;
 export type Vertical = Sep[];

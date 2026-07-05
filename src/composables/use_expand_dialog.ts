@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue';
 import { get_notation, list_notations } from '@/core/registry';
-import { resolve_display } from '@/utils';
 import type { ExpandSettings, Variant } from '@/core/settings';
 import { focus_node, get_last_focus } from '@/composables/use_focus_tracker.ts';
+import { resolve_display } from '@/notation-definition.ts';
 
 const visible = ref(false);
 const input_text = ref('');

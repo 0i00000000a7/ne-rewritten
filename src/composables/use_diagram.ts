@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import type { Diagram } from '@/core/diagram_types';
-import type { DiagramAction, DiagramControl } from '@/utils';
+import { DiagramAction, DiagramControl } from '@/notation-definition.ts';
 
 const diagram = ref<Diagram | null>(null);
 const visible = ref(false);

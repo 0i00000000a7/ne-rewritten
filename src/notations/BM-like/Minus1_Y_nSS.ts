@@ -1,13 +1,5 @@
-import {
-    bind2,
-    bind3,
-    deepcopy,
-    index_of_last,
-    lex_compare,
-    type NotationDefinition,
-    number_compare,
-    tuple_lex_compare,
-} from '@/utils.ts';
+import { bind2, bind3, deepcopy, index_of_last, lex_compare, number_compare, tuple_lex_compare } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 type Column = [number[], number];
 type Expr = Column[];

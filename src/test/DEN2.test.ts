@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEN2 } from '@/notations/DEN/DEN2.ts';
-import { resolve_display } from '@/utils.ts';
+import { resolve_display } from '@/notation-definition.ts';
 
 describe('expand', () => {
     it('1342575', () => {

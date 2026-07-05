@@ -1,5 +1,5 @@
-import type { NotationDefinition } from '@/utils.ts';
 import { TON_limit, TON_noraise_compare, TON_noraise_display } from './ton_helpers.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 var data: any = {};
 var IStd: any = {};

@@ -1,11 +1,5 @@
-import {
-    index_of_last,
-    lex_compare,
-    lex_compare_by,
-    type NotationDefinition,
-    number_compare,
-    tuple_lex_compare,
-} from '@/utils.ts';
+import { index_of_last, lex_compare, lex_compare_by, number_compare, tuple_lex_compare } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type ExprData<Data> = [Data, ExprData<Data>[]][];
 export type Expr = ExprData<number[]>;

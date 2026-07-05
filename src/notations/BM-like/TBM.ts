@@ -1,4 +1,5 @@
-import { lex_compare, type NotationDefinition, number_compare, tuple_lex_compare } from '@/utils.ts';
+import { lex_compare, number_compare, tuple_lex_compare } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type Entry = [number, Expr];
 export type Column = Entry[];

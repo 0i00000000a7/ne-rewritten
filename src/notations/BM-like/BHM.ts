@@ -6,7 +6,8 @@ import {
     is_infinity,
     matrix_is_limit,
 } from '@/notations/BM-like/BM.ts';
-import type { NotationDefinition } from '@/utils.ts';
+
+import { NotationDefinition } from '@/notation-definition.ts';
 
 const data: Record<string, Expr[]> = {};
 

@@ -1,5 +1,6 @@
-import { lex_compare, NotationDefinition, number_compare } from '@/utils.ts';
+import { lex_compare, number_compare } from '@/utils.ts';
 import { sequence_display, sequence_from_display } from '@/notations/Y/Omega_Y.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 type Expr = number[];
 

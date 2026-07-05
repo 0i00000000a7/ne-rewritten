@@ -1,4 +1,5 @@
-import { boolean_compare, lex_compare, NotationDefinition } from '@/utils.ts';
+import { boolean_compare, lex_compare } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 type PrimExpr = [Expr, Expr];
 type Expr = [0] | [1, PrimExpr, Expr];

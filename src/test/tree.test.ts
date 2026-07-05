@@ -10,7 +10,8 @@ import {
     prepend_child,
     TreeNode,
 } from '@/core/tree';
-import type { NotationDefinition } from '@/utils';
+
+import { NotationDefinition } from '@/notation-definition.ts';
 
 // ---------------------------------------------------------------------------
 // 辅助：构造一棵标准测试树

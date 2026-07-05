@@ -1,4 +1,5 @@
-import { lex_compare, NotationDefinition } from '@/utils.ts';
+import { lex_compare } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 type Expr = Expr[];
 

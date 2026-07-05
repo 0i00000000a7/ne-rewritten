@@ -1,4 +1,5 @@
-import { deepcopy, NotationDefinition } from '@/utils.ts';
+import { deepcopy } from '@/utils.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type PrimExpr = [true, number, Expr];
 export type SumExpr = [false, Expr, Expr];

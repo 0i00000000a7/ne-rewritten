@@ -1,5 +1,5 @@
-import type { NotationDefinition } from '@/utils.ts';
 import { r, raise, TON_compare, TON_limit, TON_main_display } from './ton_helpers.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 var data: any = {};
 var MCStd: any = {};

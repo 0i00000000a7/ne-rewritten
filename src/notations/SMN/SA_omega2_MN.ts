@@ -4,11 +4,11 @@ import {
     compare_ignore,
     deepcopy,
     lex_compare,
-    NotationDefinition,
     number_compare,
     tuple_lex_compare,
 } from '@/utils.ts';
 import { MN_FS_variants } from '@/notations/FS_util.ts';
+import { NotationDefinition } from '@/notation-definition.ts';
 
 export type Sep = number[];
 export type Vertical = Sep[];

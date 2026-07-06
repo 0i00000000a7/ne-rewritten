@@ -825,6 +825,7 @@ function OCN_display(e: Expr_OCN, type: DisplayType): string {
     const sub = (s: string) => (mode === 'html' ? `<sub>${s}</sub>` : `_{${s}}`);
     const text = (s: string) => (mode === 'latex' ? `\\mathrm{${s}}` : s);
     const greek = (sym: string, latex: string) => (mode === 'latex' ? latex : sym);
+    const sp = () => (mode === 'latex' ? '\\ ' : ' ');
 
     function kSym(k: number, omitOmega: boolean): string {
         if (k === 0) return omitOmega ? '' : greek('Ω', '\\mathrm{\\Omega} ');
@@ -864,7 +865,7 @@ function OCN_display(e: Expr_OCN, type: DisplayType): string {
                 const v = impl(e.value);
                 const k_sym = kSym(e.k, true);
                 const o = ordText(e.index);
-                content = o + (k_sym ? sub(k_sym) : '') + ' ' + v;
+                content = o + (k_sym ? sub(k_sym) : '') + sp() + v;
                 break;
             }
             case 'aft': {
@@ -873,9 +874,9 @@ function OCN_display(e: Expr_OCN, type: DisplayType): string {
                 const aft_word = mode === 'latex' ? '\\mathrm{aft}' : 'aft';
                 const k_sym = kSym(e.k, true);
                 if (k_sym) {
-                    content = left + ' ' + aft_word + sub(k_sym) + ' ' + right;
+                    content = left + sp() + aft_word + sub(k_sym) + sp() + right;
                 } else {
-                    content = left + ' ' + aft_word + ' ' + right;
+                    content = left + sp() + aft_word + sp() + right;
                 }
                 break;
             }

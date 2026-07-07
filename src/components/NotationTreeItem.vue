@@ -125,7 +125,7 @@ function on_expr_mousedown(e: MouseEvent) {
 function on_expr_click(e: MouseEvent) {
     if (e.ctrlKey) {
         e.preventDefault();
-        multi.toggle(node_path, resolved_original.value.plain(props.node.expr));
+        multi.toggle(node_path, (resolved_equiv.value ?? resolved_original.value).plain(props.node.expr));
         return;
     }
     if (window.getSelection()?.toString()) return;

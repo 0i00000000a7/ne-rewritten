@@ -92,6 +92,10 @@ const messages: Record<Language, Record<string, string>> = {
         'credit.upsr5': '由 Alice 定义, 给出展开器与可视化方案.',
         'diagram.show': '显示图表',
         'latex.show': '显示分析 LaTeX',
+        'multi-select.count': '已选中 {{n}} 项',
+        'multi-select.copy-to-clipboard': '导出到剪贴板',
+        'multi-select.manual-copy': '手动复制',
+        'multi-select.close': '关闭',
         'tips.intro':
             '本网站设计目标为使得 PC 用户在分析时基本实现纯键盘操作, 避免使用鼠标打断心流. 以下这些功能均为为这个目的而设计的. 如有更多建议, 可向作者提出.',
         'tips.features': '功能说明',
@@ -181,6 +185,10 @@ const messages: Record<Language, Record<string, string>> = {
         'import.error': 'Errors occurred, please check the console (F12).',
         'diagram.show': 'Show diagram',
         'latex.show': 'Show LaTeX',
+        'multi-select.count': '{{n}} selected',
+        'multi-select.copy-to-clipboard': 'Copy to clipboard',
+        'multi-select.manual-copy': 'Manual copy',
+        'multi-select.close': 'Close',
         'credit.bashicu': 'Defined by Bashicu Hyodora; expander from the original NE project.',
         'credit.tbm': 'Defined by the community.',
         'credit.yukito':

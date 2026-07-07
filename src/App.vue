@@ -19,7 +19,9 @@ import ExpandDialog from '@/components/ExpandDialog.vue';
 import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
 import { use_latex } from '@/composables/use_latex.ts';
 import LaTeXViewer from '@/components/LaTeXViewer.vue';
+import MultiSelectBar from '@/components/MultiSelectBar.vue';
 import { resolve_display } from '@/notation-definition.ts';
+import { use_multi_select } from '@/composables/use_multi_select.ts';
 
 const settings = inject(SETTINGS_KEY)!;
 const t = (key: string, params?: Record<string, string>) => create_t(settings.language)(key, params);
@@ -35,6 +37,7 @@ const {
 } = use_diagram();
 const latex_state = use_latex();
 const expand_dialog_state = use_expand_dialog();
+const multi_select = use_multi_select();
 const settings_collapsed = ref(true);
 const show_notation_selector = ref(false);
 const is_flashing = ref(false);
@@ -164,6 +167,7 @@ watch(root, (r, old) => {
 watch(
     () => settings.current_notation_id,
     () => {
+        multi_select.clear();
         const r = root.value;
         if (r) load_analysis(current_id.value, r);
     },
@@ -570,6 +574,7 @@ onUnmounted(() => {
         <HotkeyDialog :show="show_hotkeys" @close="show_hotkeys = false" />
         <ExpandDialog :show="expand_dialog_state.visible.value" @close="expand_dialog_state.close()" />
         <TipsDialog :show="show_tips" @close="show_tips = false" />
+        <MultiSelectBar />
     </div>
 </template>
 
@@ -747,6 +752,14 @@ onUnmounted(() => {
 
 .shown-item.analyzed:hover {
     background-color: #bee;
+}
+
+.shown-item.selected {
+    background-color: #cfc !important;
+}
+
+.shown-item.selected:hover {
+    background-color: #afa !important;
 }
 
 .shown-item > span:empty::before {

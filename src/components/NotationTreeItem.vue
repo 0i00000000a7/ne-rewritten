@@ -10,6 +10,7 @@ import { focus_node, focus_node_input, set_last_focus } from '@/composables/use_
 import { use_diagram } from '@/composables/use_diagram.ts';
 import { use_expand_dialog } from '@/composables/use_expand_dialog.ts';
 import { use_latex } from '@/composables/use_latex.ts';
+import { use_multi_select } from '@/composables/use_multi_select.ts';
 import RenderLatex from '@/components/RenderLatex.vue';
 import { NotationDefinition, resolve_display } from '@/notation-definition.ts';
 
@@ -40,6 +41,7 @@ const analysis0 = computed({
 
 const settings = inject(SETTINGS_KEY)!;
 const t = inject(I18N_KEY)!;
+const multi = use_multi_select();
 const node_path = props.node.path ?? '' + props.node.index;
 const equiv_name = computed(() => settings.equiv_active[props.notation.id] ?? '');
 const resolved_equiv = computed(() => {
@@ -120,7 +122,12 @@ function on_expr_mousedown(e: MouseEvent) {
     if (e.detail > 1) e.preventDefault(); // 阻止双击全选
 }
 
-function on_expr_click() {
+function on_expr_click(e: MouseEvent) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        multi.toggle(node_path, resolved_original.value.plain(props.node.expr));
+        return;
+    }
     if (window.getSelection()?.toString()) return;
     do_expand(undefined, false);
 }
@@ -276,6 +283,7 @@ function on_blur() {
             class="shown-item"
             :class="{
                 analyzed: has_analysis(node as unknown as TreeNode<unknown>),
+                selected: multi.is_selected(node_path),
             }"
             @mousedown="on_expr_mousedown"
             @click="on_expr_click"

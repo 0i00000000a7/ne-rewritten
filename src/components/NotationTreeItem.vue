@@ -116,7 +116,12 @@ function do_expand(tier?: number, focus?: boolean) {
     if (focus && child) focus_node_input(child);
 }
 
+function on_expr_mousedown(e: MouseEvent) {
+    if (e.detail > 1) e.preventDefault(); // 阻止双击全选
+}
+
 function on_expr_click() {
+    if (window.getSelection()?.toString()) return;
     do_expand(undefined, false);
 }
 
@@ -272,13 +277,19 @@ function on_blur() {
             :class="{
                 analyzed: has_analysis(node as unknown as TreeNode<unknown>),
             }"
-            @mousedown.prevent="on_expr_click"
+            @mousedown="on_expr_mousedown"
+            @click="on_expr_click"
+            @dblclick.prevent
             @mouseenter="on_enter"
             @mouseleave="on_leave"
         >
-            <span v-if="node.children.length > 0" class="fold-icon" @mousedown.stop="ed.hide_child = !ed.hide_child">{{
-                ed.hide_child ? '▶' : '▼'
-            }}</span>
+            <span
+                v-if="node.children.length > 0"
+                class="fold-icon"
+                @mousedown.stop
+                @click.stop="ed.hide_child = !ed.hide_child"
+                >{{ ed.hide_child ? '▶' : '▼' }}</span
+            >
             <span v-else class="fold-icon fold-icon--spacer"></span>
             <span
                 ref="resize_span"

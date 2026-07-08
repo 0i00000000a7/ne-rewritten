@@ -74,11 +74,13 @@ function get_name(id: string): string {
         return notation.name;
     }
     const cat = get_category(id);
-    return cat?.name ?? id;
+    if (!cat) return id;
+    if (props.notationNameMode === 'simple' && cat.simple_name) return cat.simple_name;
+    return cat.name;
 }
 
 function get_simple_name(id: string): string | undefined {
-    return get_notation(id)?.simple_name;
+    return get_notation(id)?.simple_name ?? get_category(id)?.simple_name;
 }
 
 const rev = ref(0);

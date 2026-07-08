@@ -58,7 +58,7 @@ function display(a: Expr, top_level: boolean = true): string {
 
 export const T_Minus1_Y: NotationDefinition<Expr> = {
     id: 't--1y',
-    name: 'Transfinite (-1)-Y',
+    name: 'Transfinite -1Y',
     simple_name: 'T(-1)Y',
     category_id: 'category-y',
     display: { plain: display },

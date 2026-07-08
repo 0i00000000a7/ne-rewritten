@@ -558,7 +558,7 @@ export const category_n_mn: NotationCategoryDefinition = {
 export function n_MN(n: number): NotationDefinition<Mountain> {
     return {
         id: n + '-MN',
-        name: 'non triangular' + n + 'MN',
+        name: 'non triangular ' + n + 'MN',
         simple_name: n + 'MN',
         category_id: 'category-n-mn',
         display: {

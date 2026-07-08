@@ -9,6 +9,7 @@ export interface NotationCategoryGenerator {
 export interface NotationCategoryDefinition {
     id: string;
     name: string;
+    simple_name?: string;
     parent_id?: string;
     generator?: NotationCategoryGenerator;
 }

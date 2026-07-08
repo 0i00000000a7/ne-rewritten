@@ -698,7 +698,7 @@ export const LPMS: NotationDefinition<Expr> = {
 
 export const LPTSS: NotationDefinition<Expr> = {
     id: 'lptss',
-    name: 'Lifting projection TSS',
+    name: 'Lifting projection triple sequence system',
     simple_name: 'LPTSS',
     category_id: 'category-bm-like',
     display: { plain: display, from_display },

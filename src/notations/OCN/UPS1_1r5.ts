@@ -907,7 +907,8 @@ function FS(e: Expr, index: number): Expr {
 // ========== 记号定义 ==========
 export const UPS1_1r5: NotationDefinition<Expr> = {
     id: 'ups1.1r5',
-    name: 'UPS1.1r5',
+    name: 'Upward Projection Sequence 1.1r5',
+    simple_name: 'UPS 1.1r5',
     category_id: 'category-ocn',
     display: {
         plain: formatSequence,

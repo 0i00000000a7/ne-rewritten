@@ -24,7 +24,8 @@ export function from_display(s: string): Expr {
 
 export const omega: NotationDefinition<Expr> = {
     id: 'omega',
-    name: 'ω',
+    name: 'Natural numbers',
+    simple_name: 'ω',
     display: { plain: display, from_display },
     is_limit: is_infinity,
     compare,

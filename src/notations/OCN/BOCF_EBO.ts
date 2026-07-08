@@ -153,7 +153,8 @@ function FS(e: Expr, index: Expr): Expr {
 
 export const BOCF_EBO: NotationDefinition<Expr> = {
     id: 'bocf-ebo',
-    name: 'BOCF (EBO)',
+    name: "Buchholz's OCF",
+    simple_name: 'BOCF (EBO)',
     category_id: 'category-ocf',
     is_limit: (e) => is_infinity(e) || cofinality(e) !== undefined,
     compare,

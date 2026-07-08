@@ -117,7 +117,8 @@ function FS(e: Expr, index: Expr): Expr {
 
 export const NOCF_EBO: NotationDefinition<Expr> = {
     id: 'nocf-ebo',
-    name: 'NOCF (EBO)',
+    name: 'Nothing OCF',
+    simple_name: 'NOCF (EBO)',
     category_id: 'category-ocf',
     is_limit: (e) => is_infinity(e) || cofinality(e) !== undefined,
     compare,

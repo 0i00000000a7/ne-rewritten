@@ -506,7 +506,8 @@ function convert_from_layer(dm: Expr): Expr {
 
 export const T_omega_MN: NotationDefinition<Expr> = {
     id: 't-omega-mn',
-    name: 'TωMN',
+    name: 'Transfinite ωMN',
+    simple_name: 'TωMN',
     category_id: 'category-mn',
     display: {
         plain: (m) => mountain_display(m, false),

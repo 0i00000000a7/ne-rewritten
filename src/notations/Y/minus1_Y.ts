@@ -47,8 +47,8 @@ function FS(a: Expr, index: number): Expr {
 
 export const Minus1_Y: NotationDefinition<Expr> = {
     id: '-1y',
-    name: '(-1)-Y sequence',
-    simple_name: '(-1)Y',
+    name: '-1Y sequence',
+    simple_name: '-1Y',
     category_id: 'category-y',
     display: { plain: sequence_display, from_display: sequence_from_display },
     compare,

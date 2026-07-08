@@ -163,12 +163,6 @@ function display(e: Expr, top_level: boolean = true): string {
     return e.map(column_display).join('');
 }
 
-export const category_bm_t_minus1_y_nss: NotationCategoryDefinition = {
-    id: 'category-bm-t-minus1-ynss',
-    name: 'T(-1)Y-nSS',
-    parent_id: 'category-bm-like',
-    generator: { start: 0, initial: 3, create: (n) => T_Minus1_Y_nSS(n) },
-};
 export function from_display(s: string, n: number): Expr {
     let i = 0;
 
@@ -311,6 +305,14 @@ function display_bocf(e: Expr_BOCF, html: boolean): string {
     return impl(e);
 }
 
+export const category_bm_t_minus1_y_nss: NotationCategoryDefinition = {
+    id: 'category-bm-t-minus1-y-nss',
+    name: 'Transfinite -1Y-nSS',
+    simple_name: 'T(-1)Y-nSS',
+    parent_id: 'category-bm-like',
+    generator: { start: 0, initial: 3, create: (n) => T_Minus1_Y_nSS(n) },
+};
+
 export function T_Minus1_Y_nSS(n: number): NotationDefinition<Expr> {
     let display_equiv: NotationDefinition<Expr>['display_equiv'] = {};
     if (n === 1) {
@@ -324,7 +326,7 @@ export function T_Minus1_Y_nSS(n: number): NotationDefinition<Expr> {
 
     return {
         id: 't--1y-' + (n + 1) + 'ss',
-        category_id: 'category-bm-t-minus1-ynss',
+        category_id: 'category-bm-t-minus1-y-nss',
         name: 'T(-1)Y-' + (n + 1) + 'SS',
 
         display: { plain: display, from_display: (s) => from_display(s, n) },

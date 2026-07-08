@@ -249,8 +249,9 @@ function display_bocf(e: Expr_BOCF, html: boolean): string {
 }
 
 export const category_bm_minus1_y_nss: NotationCategoryDefinition = {
-    id: 'category-bm-minus1-ynss',
-    name: '(-1)Y-nSS',
+    id: 'category-bm-minus1-y-nss',
+    name: '-1Y n-tuple Sequence System',
+    simple_name: '-1Y-nSS',
     parent_id: 'category-bm-like',
     generator: { start: 0, initial: 3, create: (n) => Minus1_Y_nSS(n) },
 };
@@ -268,7 +269,7 @@ export function Minus1_Y_nSS(n: number): NotationDefinition<Expr> {
     return {
         id: '-1y-' + (n + 1) + 'ss',
         name: '(-1)Y-' + (n + 1) + 'SS',
-        category_id: 'category-bm-minus1-ynss',
+        category_id: 'category-bm-minus1-y-nss',
 
         display: { plain: display, from_display: (s) => from_display(s, n) },
         display_equiv,

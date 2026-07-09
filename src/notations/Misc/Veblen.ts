@@ -35,15 +35,14 @@ function merge(terms: string[]): string {
 }
 
 function display_list_impl(l: VeblenList, d: (e: Expr) => string): string {
-    if (l.length === 0) return '';
-    if (list_is_finite(l[0][0])) {
-        const max = list_to_nat(l[0][0]);
-        const values = Array<Expr>(max + 1).fill(zero());
-        for (let [p, v] of l) values[list_to_nat(p)] = v;
-        return values.map(d).toReversed().join(',');
-    }
-
     function impl_list(l: VeblenList): string {
+        if (l.length === 0) return '';
+        if (list_is_finite(l[0][0])) {
+            const max = list_to_nat(l[0][0]);
+            const values = Array<Expr>(max + 1).fill(zero());
+            for (let [p, v] of l) values[list_to_nat(p)] = v;
+            return values.map(d).toReversed().join(',');
+        }
         return l.map(impl_list_entry).join(',');
     }
 
@@ -106,8 +105,17 @@ function display(e: Expr, type: DisplayType): string {
                 return merge(e[1].map(impl));
             case 2:
                 const phi = is_latex ? '\\varphi ' : 'φ';
+                if (e[1].length === 0) {
+                    if (is_zero(e[2])) return '1';
+                    if (is_one(e[2])) return is_latex ? '\\omega' : 'ω';
+                    if (type === 'html') {
+                        return 'ω<sup>' + impl(e[2]) + '</sup>';
+                    } else if (type === 'latex') {
+                        return '\\omega^{' + impl(e[2]) + '}';
+                    }
+                    return phi + '(' + impl(e[2]) + ')';
+                }
                 let l = add_tail_to_list(e[1], e[2]);
-                if (l.length === 0) return '1';
                 return phi + '(' + display_list_impl(l, impl) + ')';
             default:
                 throw new Error('Unreachable');
@@ -131,6 +139,12 @@ function display_separate(e: Expr, type: DisplayType): string {
                 const phi = is_latex ? '\\varphi ' : 'φ';
                 if (e[1].length === 0) {
                     if (is_zero(e[2])) return '1';
+                    if (is_one(e[2])) return is_latex ? '\\omega' : 'ω';
+                    if (type === 'html') {
+                        return 'ω<sup>' + impl(e[2]) + '</sup>';
+                    } else if (type === 'latex') {
+                        return '\\omega^{' + impl(e[2]) + '}';
+                    }
                     return phi + '(' + impl(e[2]) + ')';
                 }
                 return phi + '(' + display_list_impl(e[1], impl) + ';' + impl(e[2]) + ')';

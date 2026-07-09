@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { I18N_KEY } from '@/composables/use_i18n.ts';
+import { SETTINGS_KEY } from '@/composables/use_settings.ts';
+import { use_ui_states } from '@/composables/use_ui_states.ts';
 import {
     generator_can_decrement,
     generator_can_increment,
@@ -14,34 +16,22 @@ import {
     registry_version,
 } from '@/core/registry.ts';
 
-const props = defineProps<{
-    currentNotationId: string;
-    notationNameMode: 'full' | 'simple';
-    isFlashing: boolean;
-    flashShowSimple: boolean;
-    configMode: boolean;
-    hiddenNotations: string[];
-}>();
-
-const emit = defineEmits<{
-    selectNotation: [id: string];
-    toggleHidden: [id: string];
-}>();
-
+const settings = inject(SETTINGS_KEY)!;
 const t = inject(I18N_KEY)!;
+const ui = use_ui_states();
 
 // 当前导航路径（category id 列表，从根到当前层）
 const nav_path = ref<string[]>([]);
 
 onMounted(() => {
-    const notation = get_notation(props.currentNotationId);
+    const notation = get_notation(settings.current_notation_id);
     nav_path.value = notation?.category_id ? get_category_ancestors(notation.category_id) : [];
 });
 
 watch(
-    () => props.currentNotationId,
-    () => {
-        const notation = get_notation(props.currentNotationId);
+    () => settings.current_notation_id,
+    (id) => {
+        const notation = get_notation(id);
         nav_path.value = notation?.category_id ? get_category_ancestors(notation.category_id) : [];
     },
 );
@@ -49,13 +39,12 @@ watch(
 function navigate(id: string) {
     const notation = get_notation(id);
     if (notation) {
-        // 计算祖先链
         if (notation.category_id) {
             nav_path.value = get_category_ancestors(notation.category_id);
         } else {
             nav_path.value = [];
         }
-        emit('selectNotation', id);
+        settings.current_notation_id = id;
         return;
     }
 
@@ -68,19 +57,28 @@ function navigate(id: string) {
 function get_name(id: string): string {
     const notation = get_notation(id);
     if (notation) {
-        if (props.notationNameMode === 'simple' && notation.simple_name) {
+        if (settings.notation_name_mode === 'simple' && notation.simple_name) {
             return notation.simple_name;
         }
         return notation.name;
     }
     const cat = get_category(id);
     if (!cat) return id;
-    if (props.notationNameMode === 'simple' && cat.simple_name) return cat.simple_name;
+    if (settings.notation_name_mode === 'simple' && cat.simple_name) return cat.simple_name;
     return cat.name;
 }
 
 function get_simple_name(id: string): string | undefined {
     return get_notation(id)?.simple_name ?? get_category(id)?.simple_name;
+}
+
+function toggle_hidden(id: string) {
+    const idx = settings.hidden_notations.indexOf(id);
+    if (idx >= 0) {
+        settings.hidden_notations = settings.hidden_notations.filter((x) => x !== id);
+    } else {
+        settings.hidden_notations = [...settings.hidden_notations, id];
+    }
 }
 
 const rev = ref(0);
@@ -92,7 +90,7 @@ watch(
 );
 
 const levels = computed(() => {
-    void rev.value; // 依赖 version 变化
+    void rev.value;
     const result: string[][] = [[]];
     for (let i = 1; i <= nav_path.value.length; i++) {
         result.push(nav_path.value.slice(0, i));
@@ -102,14 +100,13 @@ const levels = computed(() => {
 
 function level_items(path: string[]): { kind: 'category' | 'notation'; id: string }[] {
     const items = path.length === 0 ? get_root_items() : get_category_children(path[path.length - 1]);
-    if (props.configMode) return items; // 配置模式下全部显示
+    if (ui.configMode.value) return items;
     return items.filter((item) => {
         if (item.kind === 'notation') {
             const notation = get_notation(item.id);
-            // generator 类别下的记号始终显示
             if (notation?.category_id && get_category(notation.category_id)?.generator) return true;
         }
-        return !props.hiddenNotations.includes(item.id);
+        return !settings.hidden_notations.includes(item.id);
     });
 }
 
@@ -132,7 +129,6 @@ function handle_decrement(cat_id: string, e: MouseEvent) {
     generator_decrement(cat_id);
 }
 
-/** 当前行（level 对应的子项行）的父 category 是否有 generator */
 function row_has_generator(level: string[]): boolean {
     if (level.length === 0) return false;
     return generator_can_increment(level[level.length - 1]);
@@ -154,22 +150,26 @@ function row_can_decrement(level: string[]): boolean {
                 :class="{
                     'nav-btn--notation': item.kind === 'notation',
                     'nav-btn--category': item.kind === 'category',
-                    'nav-btn--current': item.kind === 'notation' && item.id === currentNotationId,
+                    'nav-btn--current': item.kind === 'notation' && item.id === settings.current_notation_id,
                     'nav-btn--open': item.kind === 'category' && nav_path[level.length] === item.id,
-                    'nav-btn--hidden': hiddenNotations.includes(item.id) && showCheckbox(item),
+                    'nav-btn--hidden': settings.hidden_notations.includes(item.id) && showCheckbox(item),
                 }"
                 @mousedown.prevent="navigate(item.id)"
             >
-                <label v-if="configMode && showCheckbox(item)" class="nav-chk" @mousedown.prevent.stop>
+                <label v-if="ui.configMode.value && showCheckbox(item)" class="nav-chk" @mousedown.prevent.stop>
                     <input
                         type="checkbox"
-                        :checked="hiddenNotations.includes(item.id)"
-                        @change="emit('toggleHidden', item.id)"
+                        :checked="settings.hidden_notations.includes(item.id)"
+                        @change="toggle_hidden(item.id)"
                     />
                 </label>
-                <span v-if="notationNameMode === 'full' && get_simple_name(item.id)" class="nav-btn-stack">
-                    <span :class="{ active: !isFlashing || !flashShowSimple }">{{ get_name(item.id) }}</span>
-                    <span :class="{ active: isFlashing && flashShowSimple }">{{ get_simple_name(item.id) }}</span>
+                <span v-if="settings.notation_name_mode === 'full' && get_simple_name(item.id)" class="nav-btn-stack">
+                    <span :class="{ active: !ui.isFlashing.value || !ui.flashShowSimple.value }">{{
+                        get_name(item.id)
+                    }}</span>
+                    <span :class="{ active: ui.isFlashing.value && ui.flashShowSimple.value }">{{
+                        get_simple_name(item.id)
+                    }}</span>
                 </span>
                 <span v-else>{{ get_name(item.id) }}</span>
             </button>

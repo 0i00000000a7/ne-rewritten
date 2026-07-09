@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, provide, reactive, ref, watch } from 'vue';
+import { inject, onMounted, onUnmounted, provide, reactive, watch } from 'vue';
 import { SETTINGS_KEY } from '@/composables/use_settings.ts';
 import { get_notation } from '@/core/registry.ts';
 import type { TreeNode } from '@/core/tree.ts';
-import { init_dataset } from '@/core/tree.ts';
+import { focus_node, get_last_focus } from '@/composables/use_focus_tracker.ts';
 import NotationTree from '@/components/NotationTree.vue';
-import { focus_node, focus_node_input, get_last_focus } from '@/composables/use_focus_tracker.ts';
-import { export_analysis, import_analysis } from '@/core/analysis.ts';
-import { download_buffer, export_to_xlsx, import_from_xlsx } from '@/core/xlsx_io.ts';
 
 import { use_diagram } from '@/composables/use_diagram.ts';
 import DiagramViewer from '@/components/DiagramViewer.vue';
@@ -21,45 +18,24 @@ import LaTeXViewer from '@/components/LaTeXViewer.vue';
 import MultiSelectBar from '@/components/MultiSelectBar.vue';
 import NotationNav from '@/components/NotationNav.vue';
 import NotationNavPlain from '@/components/NotationNavPlain.vue';
-import { resolve_display } from '@/notation-definition.ts';
+import SettingsBar from '@/components/SettingsBar.vue';
 import { use_multi_select } from '@/composables/use_multi_select.ts';
+import { use_ui_states } from '@/composables/use_ui_states.ts';
+import { SAVE_LOAD_KEY, use_save_load } from '@/composables/use_save_load.ts';
 
 const settings = inject(SETTINGS_KEY)!;
 const t = (key: string, params?: Record<string, string>) => create_t(settings.language)(key, params);
 provide(I18N_KEY, t);
-const {
-    diagram,
-    visible,
-    pos_x,
-    pos_y,
-    show: show_diagram,
-    hide,
-    dispatch_action: dispatch_diagram_action,
-} = use_diagram();
+
+const { diagram, visible, pos_x, pos_y, hide } = use_diagram();
 const latex_state = use_latex();
 const expand_dialog_state = use_expand_dialog();
 const multi_select = use_multi_select();
-const config_mode = ref(false);
-const settings_collapsed = ref(true);
-const is_flashing = ref(false);
-const flash_show_simple = ref(false);
-let flash_timer: ReturnType<typeof setInterval> | null = null;
+const ui = use_ui_states();
 
-function start_flash() {
-    is_flashing.value = true;
-    flash_show_simple.value = false;
-    flash_timer = setInterval(() => {
-        flash_show_simple.value = !flash_show_simple.value;
-    }, 800);
-}
-
-function stop_flash() {
-    is_flashing.value = false;
-    if (flash_timer !== null) {
-        clearInterval(flash_timer);
-        flash_timer = null;
-    }
-}
+const save_load = use_save_load(reactive(new Map()));
+provide(SAVE_LOAD_KEY, save_load);
+const { trees, notation, root, save_indicator } = save_load;
 
 function toggle_hidden(id: string) {
     const idx = settings.hidden_notations.indexOf(id);
@@ -81,240 +57,13 @@ watch(
     },
     { immediate: true },
 );
-const font_options = ['Comic Sans MS', 'Consolas', 'Microsoft YaHei UI'];
 
-const trees: Map<string, TreeNode<unknown>> = reactive(new Map());
-
-function get_or_create_tree(id: string): TreeNode<unknown> | null {
-    let root = trees.get(id);
-    if (!root) {
-        const n = get_notation(id);
-        if (!n) return null;
-        root = reactive(init_dataset(n));
-        trees.set(id, root);
-    }
-    return root;
-}
-
-const current_id = computed(() => settings.current_notation_id);
-const root = computed(() => get_or_create_tree(current_id.value));
-const notation = computed(() => get_notation(current_id.value));
-const equiv_options = computed(() => {
-    const n = notation.value;
-    return n?.display_equiv ? Object.keys(n.display_equiv) : [];
-});
-
-const tier_name = computed(() => {
-    const ti = settings.tier;
-    const key = 'tier.' + ti;
-    const label = t(key);
-    if (label !== key) return label;
-    return ti + '-fold expansion';
-});
-
-const file_input = ref<HTMLInputElement>();
-const show_hotkeys = ref(false);
-const show_tips = ref(false);
-
-function toggle_diagram() {
-    settings.show_diagram = !settings.show_diagram;
-    if (settings.show_diagram) settings.show_latex = false;
-}
-
-function toggle_latex() {
-    settings.show_latex = !settings.show_latex;
-    if (settings.show_latex) settings.show_diagram = false;
-}
-
-const DISPLAY_MODES = ['plain', 'html', 'latex'] as const;
-
-function toggle_display_mode() {
-    const idx = DISPLAY_MODES.indexOf(settings.display_mode);
-    settings.display_mode = DISPLAY_MODES[(idx + 1) % DISPLAY_MODES.length];
-}
-
-const ANALYSIS_STORAGE_PREFIX = 'ne-analysis-';
-let auto_save_timer: ReturnType<typeof setInterval> | null = null;
-let save_indicator_timer: ReturnType<typeof setInterval> | null = null;
-
-const last_save_time = ref(Date.now());
-const save_indicator = ref('');
-
-function update_save_indicator() {
-    const elapsed = Math.floor((Date.now() - last_save_time.value) / 1000);
-    if (elapsed < 60) save_indicator.value = elapsed + 's';
-    else save_indicator.value = Math.floor(elapsed / 60) + 'm' + (elapsed % 60) + 's';
-}
-
-function save_analysis() {
-    const n = notation.value;
-    const r = root.value;
-    if (!n || !r) return;
-    const entries = export_analysis(r);
-    localStorage.setItem(ANALYSIS_STORAGE_PREFIX + n.id, JSON.stringify(entries));
-    last_save_time.value = Date.now();
-    update_save_indicator();
-}
-
-function load_analysis(id: string, r: TreeNode<unknown>) {
-    const n = get_notation(id);
-    if (!n) return;
-    const raw = localStorage.getItem(ANALYSIS_STORAGE_PREFIX + id);
-    if (!raw) return;
-    try {
-        const entries: any[] = JSON.parse(raw);
-        import_analysis(r, entries, n as any, settings.variant, settings.max_find_fs);
-    } catch {
-        /* ignore corrupt data */
-    }
-}
-
-watch(root, (r, old) => {
-    if (r && r !== old) load_analysis(current_id.value, r);
-});
 watch(
     () => settings.current_notation_id,
     () => {
         multi_select.clear();
-        const r = root.value;
-        if (r) load_analysis(current_id.value, r);
     },
 );
-
-function handle_reset() {
-    const n = notation.value;
-    if (!n || !confirm('Reset this notation? All expanded data will be lost.')) return;
-    localStorage.removeItem(ANALYSIS_STORAGE_PREFIX + n.id);
-    const root: TreeNode<unknown> = reactive(init_dataset(n));
-    trees.set(n.id, root);
-}
-
-async function handle_export() {
-    const n = notation.value;
-    const r = root.value;
-    if (!n || !r) return;
-    const entries = export_analysis(r);
-    const equiv_name = settings.equiv_active[n.id];
-    const display_fn =
-        equiv_name && n.display_equiv?.[equiv_name]
-            ? resolve_display(n.display_equiv[equiv_name]).plain
-            : resolve_display(n.display).plain;
-    const buf = await export_to_xlsx(entries, display_fn);
-    download_buffer(buf, `${n.id}_analysis.xlsx`);
-}
-
-async function handle_import() {
-    file_input.value?.click();
-}
-
-async function on_file_selected(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    const n = notation.value;
-    const r = root.value;
-    if (!n || !r) return;
-    const equiv_name = settings.equiv_active[n.id];
-    const display_spec =
-        equiv_name && n.display_equiv?.[equiv_name]
-            ? resolve_display(n.display_equiv[equiv_name])
-            : resolve_display(n.display);
-    if (!display_spec.from_display) return;
-
-    const buf = await file.arrayBuffer();
-    const entries = await import_from_xlsx(buf, display_spec.from_display);
-    const matched = import_analysis(r, entries, n as any, settings.variant, settings.max_find_fs);
-
-    if ((entries as any).skipped?.length || matched.length !== entries.length) {
-        alert(t('import.error'));
-    }
-
-    if (matched.length > 0) {
-        const last = matched[matched.length - 1];
-        const ed = (last.extraData ??= {}) as any;
-        ed.focus_on_mounted = true;
-    }
-    input.value = '';
-}
-
-const find_input = ref<HTMLInputElement>();
-
-function handle_find() {
-    const n = notation.value;
-    const r = root.value;
-    const val = find_input.value?.value;
-    if (!n || !r || !val) return;
-    const equiv_name = settings.equiv_active[n.id];
-    const display_spec =
-        equiv_name && n.display_equiv?.[equiv_name]
-            ? resolve_display(n.display_equiv[equiv_name])
-            : resolve_display(n.display);
-    if (!display_spec.from_display) return;
-    try {
-        const expr = display_spec.from_display(val);
-        const matched = import_analysis(r, [{ expr, analysis: [] }], n as any, settings.variant, settings.max_find_fs);
-        if (matched.length > 0) {
-            focus_node_input(matched[0] as any);
-        } else {
-            alert(t('import.error'));
-        }
-    } catch {
-        alert(t('import.error'));
-    }
-}
-
-function on_find_input() {
-    const n = notation.value;
-    const val = find_input.value?.value;
-    if (!n || !val) {
-        hide();
-        return;
-    }
-    const dc = n.draw_diagram;
-    if (!dc || !settings.show_diagram) return;
-    const equiv_name = settings.equiv_active[n.id];
-    const display_spec =
-        equiv_name && n.display_equiv?.[equiv_name]
-            ? resolve_display(n.display_equiv[equiv_name])
-            : resolve_display(n.display);
-    if (!display_spec.from_display) return;
-    try {
-        const expr = display_spec.from_display(val);
-        const el = find_input.value;
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        show_diagram(dc, expr, r.left, 60 + r.height, equiv_name ?? undefined);
-    } catch {
-        hide();
-    }
-}
-
-function on_find_focus(e: FocusEvent) {
-    const el = e.target as HTMLInputElement;
-    const r = el.getBoundingClientRect();
-    const target_scroll = r.top + window.scrollY - 60;
-    window.scrollTo({ top: target_scroll, behavior: 'smooth' });
-    on_find_input();
-}
-
-function on_find_keydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        handle_find();
-    } else if (e.key === 'ArrowUp' && e.ctrlKey) {
-        e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'up', step: 1 });
-    } else if (e.key === 'ArrowDown' && e.ctrlKey) {
-        e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'down', step: 1 });
-    } else if (e.key === 'ArrowLeft' && e.ctrlKey) {
-        e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'left', step: 1 });
-    } else if (e.key === 'ArrowRight' && e.ctrlKey) {
-        e.preventDefault();
-        dispatch_diagram_action({ type: 'scroll', direction: 'right', step: 1 });
-    }
-}
 
 function on_global_keydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && !['c', 'v', 'a', 'x', 'z', 'r'].includes(e.key.toLowerCase())) {
@@ -327,249 +76,72 @@ function on_global_keydown(e: KeyboardEvent) {
     }
     if (e.key.toLowerCase() === 's' && e.ctrlKey && !e.shiftKey && !e.altKey) {
         e.preventDefault();
-        handle_export();
+        save_load.handle_export();
     }
     if (e.key.toLowerCase() === 'l' && e.ctrlKey && !e.shiftKey && !e.altKey) {
         e.preventDefault();
-        handle_import();
+        save_load.handle_import();
     }
 }
 
 onMounted(() => {
     document.addEventListener('keydown', on_global_keydown);
-    auto_save_timer = setInterval(save_analysis, 30000);
-    window.addEventListener('beforeunload', save_analysis);
-    update_save_indicator();
-    save_indicator_timer = setInterval(update_save_indicator, 1000);
-    const r = root.value;
-    if (r) load_analysis(current_id.value, r);
+    save_load.init();
+    (window as any).debug_compare_order = debug_compare_order;
 });
 onUnmounted(() => {
     document.removeEventListener('keydown', on_global_keydown);
-    if (auto_save_timer !== null) clearInterval(auto_save_timer);
-    if (save_indicator_timer !== null) clearInterval(save_indicator_timer);
-    window.removeEventListener('beforeunload', save_analysis);
+    save_load.dispose();
 });
+
+function collect_nodes<T>(node: TreeNode<T>): T[] {
+    const result: T[] = [];
+    const children = node.children;
+    for (const child of children) {
+        result.push(child.expr);
+        result.push(...collect_nodes(child));
+    }
+    return result;
+}
+
+function debug_compare_order(notation_id?: string) {
+    const n = notation_id ?? notation.value?.id;
+    const r = n ? trees.get(n) : root.value;
+    if (!r) return console.warn('No tree found');
+    const notation_def = get_notation(n!);
+    if (!notation_def?.compare) return console.warn('No compare function for', n);
+    const compare = notation_def.compare;
+
+    const nodes = collect_nodes(r);
+
+    const errors: string[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const cmp = compare(nodes[i], nodes[j]);
+            if (cmp <= 0) {
+                errors.push(
+                    `node[${i}] < node[${j}] should be positive (later in pre-order = smaller), but compare returned ${cmp}`,
+                );
+            }
+        }
+    }
+    if (errors.length === 0) {
+        console.log(
+            `✓ ${nodes.length} nodes, ${(nodes.length * (nodes.length - 1)) / 2} pairs — all strictly decreasing in pre-order.`,
+        );
+    } else {
+        console.error(`✗ ${errors.length} ordering violation(s):`, errors.slice(0, 10));
+        if (errors.length > 10) console.error(`  ... and ${errors.length - 10} more`);
+    }
+}
 </script>
 
 <template>
     <div>
-        <NotationNav
-            v-if="settings.nav_mode === 'grouped'"
-            :current-notation-id="settings.current_notation_id"
-            :notation-name-mode="settings.notation_name_mode"
-            :is-flashing="is_flashing"
-            :flash-show-simple="flash_show_simple"
-            :config-mode="config_mode"
-            :hidden-notations="settings.hidden_notations"
-            @select-notation="(id: string) => (settings.current_notation_id = id)"
-            @toggle-hidden="toggle_hidden"
-        />
-        <NotationNavPlain
-            v-else
-            :current-notation-id="settings.current_notation_id"
-            :notation-name-mode="settings.notation_name_mode"
-            :is-flashing="is_flashing"
-            :flash-show-simple="flash_show_simple"
-            :config-mode="config_mode"
-            :hidden-notations="settings.hidden_notations"
-            @select-notation="(id: string) => (settings.current_notation_id = id)"
-            @toggle-hidden="toggle_hidden"
-        />
+        <NotationNav v-if="settings.nav_mode === 'grouped'" />
+        <NotationNavPlain v-else />
 
-        <div class="settings-box">
-            <div class="toolbar">
-                <div class="toolbar-row">
-                    <span
-                        style="margin-right: 8px"
-                        @mouseenter="settings.notation_name_mode === 'full' && start_flash()"
-                        @mouseleave="stop_flash"
-                    >
-                        {{ t('notation-name.mode-label') }}
-                        <button
-                            class="toggle-btn"
-                            @mousedown="
-                                settings.notation_name_mode = settings.notation_name_mode === 'full' ? 'simple' : 'full'
-                            "
-                        >
-                            {{ t('notation-name.' + settings.notation_name_mode) }}
-                        </button>
-                    </span>
-                    <span style="margin-left: 12px">
-                        {{ t('config-display.label') }}
-                        <button class="toggle-btn" @mousedown="config_mode = !config_mode">
-                            {{ t('config-display.configure') }}
-                        </button>
-                    </span>
-                    <span style="margin-left: 12px">
-                        {{ t('nav-mode.label') }}
-                        <button
-                            class="toggle-btn"
-                            @mousedown="settings.nav_mode = settings.nav_mode === 'grouped' ? 'flat' : 'grouped'"
-                        >
-                            {{ t('nav-mode.' + settings.nav_mode) }}
-                        </button>
-                    </span>
-                </div>
-                <div class="toolbar-row">
-                    <label class="find-label">
-                        {{ t('find-notation.label') }}
-                        <input
-                            ref="find_input"
-                            type="text"
-                            spellcheck="false"
-                            @focus="on_find_focus"
-                            @input="on_find_input"
-                            @keydown="on_find_keydown"
-                        />
-                        <button @mousedown.prevent="handle_find">{{ t('find-notation.find') }}</button>
-                    </label>
-                    <label>
-                        {{ t('find-notation.max-fs') }}
-                        <input
-                            type="number"
-                            min="1"
-                            max="9999"
-                            v-model.number="settings.max_find_fs"
-                            style="width: 60px; vertical-align: middle"
-                        />
-                    </label>
-                </div>
-                <div class="toolbar-row">
-                    <label>
-                        {{ t('fs-variant.label') }}
-                        <select v-model="settings.variant" @mousedown.stop>
-                            <option value="FS">{{ t('fs-variant.normal') }}</option>
-                            <option value="FS_alter">{{ t('fs-variant.alternative') }}</option>
-                            <option value="FS_short">{{ t('fs-variant.short') }}</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="toolbar-row">
-                    <button class="reset-btn" @mousedown="handle_reset">{{ t('toolbar.reset') }}</button>
-                    <button @mousedown="handle_export">{{ t('toolbar.export') }}</button>
-                    <button @mousedown="handle_import">{{ t('toolbar.import') }}</button>
-                    <button @mousedown="save_analysis">{{ t('toolbar.save') }}</button>
-                    <button @mousedown="show_hotkeys = true">{{ t('toolbar.hotkeys') }}</button>
-                    <button class="toolbar-btn-tips" @mousedown="show_tips = true">{{ t('toolbar.tips') }}</button>
-                    <input
-                        ref="file_input"
-                        type="file"
-                        accept=".xlsx"
-                        style="display: none"
-                        @change="on_file_selected"
-                    />
-                </div>
-                <div class="toolbar-row">
-                    <label v-if="notation?.draw_diagram">
-                        <input type="checkbox" :checked="settings.show_diagram" @change="toggle_diagram" />
-                        {{ t('diagram.show') }}
-                    </label>
-                    <label>
-                        <input type="checkbox" :checked="settings.show_latex" @change="toggle_latex" />
-                        {{ t('latex.show') }}
-                    </label>
-                </div>
-                <div v-if="!settings_collapsed && equiv_options.length > 0" class="toolbar-row">
-                    <label>
-                        {{ t('equiv.label') }}
-                        <select
-                            :value="settings.equiv_active[current_id] ?? ''"
-                            @mousedown.stop
-                            @change="
-                                (e: any) => {
-                                    settings.equiv_active = {
-                                        ...settings.equiv_active,
-                                        [current_id]: (e.target as HTMLSelectElement).value || undefined,
-                                    };
-                                }
-                            "
-                        >
-                            <option value="">{{ t('equiv.none') }}</option>
-                            <option v-for="k in equiv_options" :key="k" :value="k">
-                                {{ k }}
-                            </option>
-                        </select>
-                    </label>
-                    <label style="margin-left: 8px" v-if="settings.equiv_active[current_id]">
-                        <input
-                            type="checkbox"
-                            :checked="settings.equiv_hide_original[current_id] ?? true"
-                            @change="
-                                (e: any) => {
-                                    settings.equiv_hide_original = {
-                                        ...settings.equiv_hide_original,
-                                        [current_id]: (e.target as HTMLInputElement).checked,
-                                    };
-                                }
-                            "
-                        />
-                        {{ t('equiv.hide-original') }}
-                    </label>
-                </div>
-                <div v-if="!settings_collapsed" class="toolbar-row">
-                    <span style="margin-right: 8px">
-                        {{ t('display.label') }}
-                        <button class="toggle-btn" @mousedown="toggle_display_mode">
-                            {{ t('display.' + settings.display_mode) }}
-                        </button>
-                    </span>
-                    <span>
-                        {{ t('tier.label') }}
-                        <button class="tier-btn" @mousedown="settings.tier = Math.max(settings.tier - 1, 0)">
-                            <span class="tier-icon">−</span>
-                        </button>
-                        {{ tier_name }}
-                        <button class="tier-btn" @mousedown="settings.tier = settings.tier + 1">
-                            <span class="tier-icon">+</span>
-                        </button>
-                    </span>
-                </div>
-                <div v-if="!settings_collapsed" class="toolbar-row">
-                    <span style="margin-right: 8px">
-                        {{ t('analysis-input.label') }}
-                        <button class="toggle-btn" @mousedown="settings.show_input = !settings.show_input">
-                            {{ settings.show_input ? t('analysis-input.show') : t('analysis-input.hide') }}
-                        </button>
-                    </span>
-                    <label v-if="settings.show_input">
-                        {{ t('analysis-input.width') }}
-                        <input
-                            type="range"
-                            min="60"
-                            max="600"
-                            v-model.number="settings.input_width"
-                            style="vertical-align: middle"
-                        />
-                        {{ settings.input_width }}px
-                    </label>
-                    <label>
-                        <input type="checkbox" v-model="settings.use_delete_to_clear" />
-                        {{ t('analysis-input.use-delete') }}
-                    </label>
-                </div>
-                <div v-if="!settings_collapsed" class="toolbar-row">
-                    <label>
-                        {{ t('font.label') }}
-                        <select v-model="settings.font_family" @mousedown.stop>
-                            <option v-for="f in font_options" :key="f" :value="f">
-                                {{ f }}
-                            </option>
-                        </select>
-                    </label>
-                    <label style="margin-left: 8px">
-                        {{ t('language.label') }}
-                        <select v-model="settings.language" @mousedown.stop>
-                            <option value="zh">中文</option>
-                            <option value="en">English</option>
-                        </select>
-                    </label>
-                </div>
-            </div>
-            <button class="collapse-btn" @mousedown="settings_collapsed = !settings_collapsed">
-                {{ settings_collapsed ? t('settings.more') : t('settings.less') }}
-            </button>
-        </div>
+        <SettingsBar />
 
         <div v-if="root && notation" class="preview-container">
             <NotationTree :root="root" :notation="notation as any" :tier="settings.tier" />
@@ -597,16 +169,16 @@ onUnmounted(() => {
         <div v-if="save_indicator" class="save-indicator">
             {{ t('autosave.last-save', { time: save_indicator }) }}
         </div>
-        <HotkeyDialog :show="show_hotkeys" @close="show_hotkeys = false" />
+        <HotkeyDialog :show="ui.showHotkeys.value" @close="ui.showHotkeys.value = false" />
         <ExpandDialog :show="expand_dialog_state.visible.value" @close="expand_dialog_state.close()" />
-        <TipsDialog :show="show_tips" @close="show_tips = false" />
+        <TipsDialog :show="ui.showTips.value" @close="ui.showTips.value = false" />
         <MultiSelectBar />
         <Teleport to="body">
-            <div v-if="config_mode" class="config-bar">
+            <div v-if="ui.configMode.value" class="config-bar">
                 <button class="ms-btn" @mousedown.stop="unhide_all">
                     {{ t('config-display.unhide-all') }}
                 </button>
-                <button class="ms-btn ms-btn-confirm" @mousedown.stop="config_mode = false">
+                <button class="ms-btn ms-btn-confirm" @mousedown.stop="ui.setConfigMode(false)">
                     {{ t('config-display.confirm') }}
                 </button>
             </div>
@@ -778,9 +350,6 @@ onUnmounted(() => {
 .expr-display.shifted {
     margin-left: 12px;
     color: #666;
-}
-
-.expr-display.equiv {
 }
 
 .tooltip {

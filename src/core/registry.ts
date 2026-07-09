@@ -22,6 +22,9 @@ export function register_category(cat: NotationCategoryDefinition): void {
     if (category_defs.has(cat.id)) {
         throw new Error(`Category '${cat.id}' is already registered.`);
     }
+    if (map.has(cat.id)) {
+        throw new Error(`A notation with id '${cat.id}' already exists; cannot register as category.`);
+    }
     if (cat.parent_id !== undefined && !category_defs.has(cat.parent_id)) {
         throw new Error(`Parent category '${cat.parent_id}' not found for '${cat.id}'.`);
     }
@@ -60,6 +63,9 @@ const map = new Map<string, NotationDefinition<unknown>>();
 function _register_notation<T>(notation: NotationDefinition<T>): void {
     if (notation.category_id !== undefined && !category_defs.has(notation.category_id)) {
         throw new Error(`Category '${notation.category_id}' not found for notation '${notation.id}'.`);
+    }
+    if (category_defs.has(notation.id)) {
+        throw new Error(`A category with id '${notation.id}' already exists; cannot register as notation.`);
     }
     map.set(notation.id, notation as NotationDefinition<unknown>);
     add_item(notation.category_id, 'notation', notation.id);

@@ -1,0 +1,52 @@
+import { computed, reactive, ref } from 'vue';
+
+interface UiState {
+    configMode: boolean;
+    isFlashing: boolean;
+    flashShowSimple: boolean;
+}
+
+const state = reactive<UiState>({
+    configMode: false,
+    isFlashing: false,
+    flashShowSimple: false,
+});
+
+const showHotkeys = ref(false);
+const showTips = ref(false);
+
+export function use_ui_states() {
+    let flash_timer: ReturnType<typeof setInterval> | null = null;
+
+    function start_flash() {
+        state.isFlashing = true;
+        state.flashShowSimple = false;
+        flash_timer = setInterval(() => {
+            state.flashShowSimple = !state.flashShowSimple;
+        }, 800);
+    }
+
+    function stop_flash() {
+        state.isFlashing = false;
+        if (flash_timer !== null) {
+            clearInterval(flash_timer);
+            flash_timer = null;
+        }
+    }
+
+    return {
+        configMode: computed(() => state.configMode),
+        setConfigMode: (v: boolean) => {
+            state.configMode = v;
+        },
+        toggleConfigMode: () => {
+            state.configMode = !state.configMode;
+        },
+        isFlashing: computed(() => state.isFlashing),
+        flashShowSimple: computed(() => state.flashShowSimple),
+        start_flash,
+        stop_flash,
+        showHotkeys,
+        showTips,
+    };
+}

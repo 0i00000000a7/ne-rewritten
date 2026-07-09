@@ -1,33 +1,32 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue';
 import { I18N_KEY } from '@/composables/use_i18n.ts';
-import { list_notations, is_extra_generated } from '@/core/registry.ts';
+import { SETTINGS_KEY } from '@/composables/use_settings.ts';
+import { use_ui_states } from '@/composables/use_ui_states.ts';
+import { is_extra_generated, list_notations } from '@/core/registry.ts';
 
-const props = defineProps<{
-    currentNotationId: string;
-    notationNameMode: 'full' | 'simple';
-    isFlashing: boolean;
-    flashShowSimple: boolean;
-    configMode: boolean;
-    hiddenNotations: string[];
-}>();
-
-const emit = defineEmits<{
-    selectNotation: [id: string];
-    toggleHidden: [id: string];
-}>();
-
+const settings = inject(SETTINGS_KEY)!;
 const t = inject(I18N_KEY)!;
+const ui = use_ui_states();
 
 const all = computed(() => {
     const notations = list_notations();
-    if (props.configMode) return notations; // 配置模式全部显示
-    return notations.filter((n) => !is_extra_generated(n.id) && !props.hiddenNotations.includes(n.id));
+    if (ui.configMode.value) return notations;
+    return notations.filter((n) => !is_extra_generated(n.id) && !settings.hidden_notations.includes(n.id));
 });
 
 function get_name(n: (typeof all.value)[number]): string {
-    if (props.notationNameMode === 'simple' && n.simple_name) return n.simple_name;
+    if (settings.notation_name_mode === 'simple' && n.simple_name) return n.simple_name;
     return n.name;
+}
+
+function toggle_hidden(id: string) {
+    const idx = settings.hidden_notations.indexOf(id);
+    if (idx >= 0) {
+        settings.hidden_notations = settings.hidden_notations.filter((x) => x !== id);
+    } else {
+        settings.hidden_notations = [...settings.hidden_notations, id];
+    }
 }
 </script>
 
@@ -38,17 +37,21 @@ function get_name(n: (typeof all.value)[number]): string {
             :key="n.id"
             class="nav-btn"
             :class="{
-                'nav-btn--current': n.id === currentNotationId,
-                'nav-btn--hidden': hiddenNotations.includes(n.id),
+                'nav-btn--current': n.id === settings.current_notation_id,
+                'nav-btn--hidden': settings.hidden_notations.includes(n.id),
             }"
-            @mousedown.prevent="emit('selectNotation', n.id)"
+            @mousedown.prevent="settings.current_notation_id = n.id"
         >
-            <label v-if="configMode" class="nav-chk" @mousedown.prevent.stop>
-                <input type="checkbox" :checked="hiddenNotations.includes(n.id)" @change="emit('toggleHidden', n.id)" />
+            <label v-if="ui.configMode.value" class="nav-chk" @mousedown.prevent.stop>
+                <input
+                    type="checkbox"
+                    :checked="settings.hidden_notations.includes(n.id)"
+                    @change="toggle_hidden(n.id)"
+                />
             </label>
-            <span v-if="notationNameMode === 'full' && n.simple_name" class="nav-btn-stack">
-                <span :class="{ active: !isFlashing || !flashShowSimple }">{{ n.name }}</span>
-                <span :class="{ active: isFlashing && flashShowSimple }">{{ n.simple_name }}</span>
+            <span v-if="settings.notation_name_mode === 'full' && n.simple_name" class="nav-btn-stack">
+                <span :class="{ active: !ui.isFlashing.value || !ui.flashShowSimple.value }">{{ n.name }}</span>
+                <span :class="{ active: ui.isFlashing.value && ui.flashShowSimple.value }">{{ n.simple_name }}</span>
             </span>
             <span v-else>{{ get_name(n) }}</span>
         </button>

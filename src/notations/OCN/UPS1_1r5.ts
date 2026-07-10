@@ -443,9 +443,9 @@ function compactSum(arr: Expr_OCN[]): Expr_OCN {
             result.push(arr[i]);
         } else {
             if (str === '1') {
-                result.push({ type: 'number', value: count });
+                result.push({ type: 'number', value: count, depth: arr[i].depth });
             } else {
-                result.push({ type: 'mul', value: arr[i], coe: count });
+                result.push({ type: 'mul', value: arr[i], coe: count, depth: arr[i].depth });
             }
         }
         i = j;

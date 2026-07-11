@@ -3,6 +3,7 @@ import {
     display,
     Expr,
     from_display as from_display_BM,
+    INFINITY,
     is_infinity,
     matrix_is_limit,
 } from '@/notations/BM-like/BM.ts';
@@ -115,5 +116,5 @@ export const BHM: NotationDefinition<Expr> = {
     },
     credit_text_id: 'credit.bashicu',
 
-    init: () => [[[Infinity]], []],
+    init: () => [INFINITY(), []],
 };

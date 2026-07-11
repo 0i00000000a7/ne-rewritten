@@ -215,7 +215,7 @@ const messages: Record<Language, Record<string, string>> = {
         'multi-select.copy-to-clipboard': 'Copy to clipboard',
         'multi-select.manual-copy': 'Manual copy',
         'multi-select.close': 'Close',
-        'credit.bashicu': 'Defined by Bashicu Hyodora; expander from the original NE project.',
+        'credit.bashicu': 'Defined by Bashicu Hyudora; expander from the original NE project.',
         'credit.tbm': 'Defined by the community.',
         'credit.yukito':
             'Defined by Yukito; expander from the original NE project, originally by Yukito; mountain diagram by Yukito.',

@@ -26,6 +26,7 @@ import { LPMS, LPTSS } from '@/notations/BM-like/LPMS.ts';
 import { wMM } from '@/notations/BM-like/wMM.ts';
 import { CMS } from '@/notations/BM-like/CMS.ts';
 import { BLM } from '@/notations/BM-like/BLM.ts';
+import { DSM } from '@/notations/BM-like/DSM.ts';
 import {
     get_generator_state,
     init_generator,
@@ -148,6 +149,7 @@ register_notation(omega_Y_strong);
 register_category(category_bm_like);
 register_notation(BM4);
 register_notation(TBM);
+register_notation(CMS);
 register_notation(BHM);
 register_notation(BSM);
 register_notation(BLM);
@@ -155,7 +157,7 @@ register_notation(UPMS);
 register_notation(LPMS);
 register_notation(LPTSS);
 register_notation(wMM);
-register_notation(CMS);
+register_notation(DSM);
 register_category(category_bm_minus1_y_nss);
 init_generator(category_bm_minus1_y_nss);
 register_category(category_bm_t_minus1_y_nss);

@@ -1,5 +1,6 @@
 import { type NotationDefinition } from '@/notation-definition.ts';
-import { compare, display, from_display, is_limit } from '@/notations/BM-like/BM.ts';
+import { compare, display, from_display, is_infinity, is_limit } from '@/notations/BM-like/BM.ts';
+import { Y_FS_variants } from '@/notations/notation_utils.ts';
 
 // wMM implementation
 var data: any = {},
@@ -184,6 +185,10 @@ const expand = (M: any, FSterm: any): any => {
     return A;
 };
 
+function infinity_FS(index: number): number[][] {
+    return [[], Array<number>(index + 1).fill(1)];
+}
+
 export const wMM: NotationDefinition<any> = {
     id: 'wmm',
     name: 'Weak mutant matrix',
@@ -195,22 +200,7 @@ export const wMM: NotationDefinition<any> = {
     },
     is_limit,
     compare,
-    FS: function (m: any, FSterm: any): any {
-        if (String(m) === 'Infinity') return [[], Array(FSterm + 1).fill(1)];
-        if (m.length === 0) return [];
-        var datakey = display(m);
-        if (!data[datakey]) data[datakey] = [];
-        else if (data[datakey][FSterm] !== undefined) return data[datakey][FSterm];
-        return (data[datakey][FSterm] = expand(m, FSterm).slice(0, -1));
-    },
-    FS_alter: function (m: any, FSterm: any): any {
-        if (String(m) === 'Infinity') return [[], Array(FSterm + 1).fill(1)];
-        if (m.length === 0) return [];
-        var datakey = display(m);
-        if (!dataalter[datakey]) dataalter[datakey] = [];
-        else if (dataalter[datakey][FSterm] !== undefined) return dataalter[datakey][FSterm];
-        return (dataalter[datakey][FSterm] = expand(m, FSterm));
-    },
+    ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
     init: function (): any {
         return [[[Infinity]], []];
     },

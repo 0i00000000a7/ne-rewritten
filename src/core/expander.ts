@@ -11,7 +11,7 @@ function resolve_fs<T>(notation: NotationDefinition<T>, variant: string): (expr:
         case 'FS_alter':
             return notation.FS_alter ?? notation.FS;
         case 'FS_short':
-            return notation.FS_short ?? notation.FS_alter ?? notation.FS;
+            return notation.FS_short ?? notation.FS;
         default:
             return notation.FS;
     }

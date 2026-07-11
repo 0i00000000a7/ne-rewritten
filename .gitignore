@@ -27,3 +27,4 @@ dist-ssr
 # Root markdown files except README
 /*.md
 !README.md
+/*.html

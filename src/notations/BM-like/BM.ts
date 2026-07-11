@@ -6,6 +6,10 @@ import { DiagramControl, NotationDefinition } from '@/notation-definition.ts';
 
 export type Expr = number[][];
 
+export function INFINITY(): Expr {
+    return [[Infinity]];
+}
+
 export function is_infinity(a: Expr): boolean {
     return ('' + a).startsWith('Infinity');
 }
@@ -33,7 +37,7 @@ export function display(a: Expr): string {
 }
 
 export function from_display(s: string, std: boolean = false): Expr {
-    if (s === 'Limit') return [[Infinity]];
+    if (s === 'Limit') return INFINITY();
     s = s.trim();
     if (s === '') return [];
 
@@ -256,7 +260,7 @@ export function compute_0Y_mountain(seq: number[]): MountainData {
 }
 
 export function from_display_as_0Y(str: string): Expr {
-    if (str === 'Limit' || str === '1,ω' || str === '1,w') return [[Infinity]];
+    if (str === 'Limit' || str === '1,ω' || str === '1,w') return INFINITY();
     const result = str.split(',').map((s) => parseInt(s.trim(), 10));
     if (result.find(Number.isNaN) !== undefined) throw new Error('Illegal omega-Y sequence');
     return compute_0Y_mountain(result).m;
@@ -279,7 +283,7 @@ export function display_simple(m: Expr): string {
 }
 
 export function from_display_simple(s: string, std: boolean = false): Expr {
-    if (s === 'Limit') return [[Infinity]];
+    if (s === 'Limit') return INFINITY();
 
     let i = 0;
 
@@ -342,7 +346,7 @@ export function from_display_simple(s: string, std: boolean = false): Expr {
         i += 5;
         skip_spaces();
         if (i !== s.length) error();
-        return [[Infinity]];
+        return INFINITY();
     }
 
     const result = parse_expr();
@@ -443,7 +447,7 @@ export const BM4: NotationDefinition<Expr> = {
     ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
 
     credit_text_id: 'credit.bashicu',
-    init: () => [[[Infinity]], []],
+    init: () => [INFINITY(), []],
 
     debug: { compute_0Y_mountain },
 };
@@ -467,5 +471,5 @@ export const seq_0Y: NotationDefinition<Expr> = {
     ...Y_FS_variants(expand, is_infinity, infinity_FS, is_limit, display),
 
     credit_text_id: 'credit.yukito',
-    init: () => [[[Infinity]], []],
+    init: () => [INFINITY(), []],
 };

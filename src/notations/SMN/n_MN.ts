@@ -79,36 +79,87 @@ function column_display_marked(c: Column, type: MarkSpec, index: number): string
 function from_display(str: string): Mountain {
     if (str === 'Limit') return INFINITY();
 
-    function parseSimpleSep(start: number): [Sep, number] {
-        let c0 = 0;
-        while (start + c0 < str.length && str[start + c0] === ',') c0++;
-        return [c0 - 1, start + c0];
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + str);
     }
 
-    function parseExprPrefix(start: number): [Mountain, number] {
-        const Mountain: Mountain = [];
-        let i = start;
-        while (i < str.length && str[i] === '(') {
+    function skip_spaces(): void {
+        while (i < str.length && str[i] === ' ') i++;
+    }
+
+    function skip_index(): void {
+        if (i < str.length && str[i] === ':') {
             i++;
-            const col: Column = [];
-            while (i < str.length && str[i] !== ')') {
-                const [sep, nextI] = parseSimpleSep(i);
-                i = nextI;
-                let valueStart = i;
-                while (i < str.length && str[i] >= '0' && str[i] <= '9') i++;
-                const valueStr = str.substring(valueStart, i);
-                if (valueStr === '') throw new Error('illegal input string: ' + str);
-                col.push([parseInt(valueStr), sep]);
-            }
-            Mountain.push(col);
-            if (i === str.length || str[i] !== ')') throw new Error('illegal input string: ' + str);
+            skip_spaces();
+            while (i < str.length && str[i] >= '0' && str[i] <= '9') i++;
+        }
+    }
+
+    function parse_sep(): Sep {
+        let count = 0;
+        while (i < str.length && str[i] === ',') {
+            count++;
             i++;
         }
-        return [Mountain, i];
+        return count === 0 ? 0 : count - 1;
     }
 
-    const [result, end] = parseExprPrefix(0);
-    if (end !== str.length) throw new Error('illegal input string: ' + str);
+    function parse_number(): number {
+        const start = i;
+        while (i < str.length && str[i] >= '0' && str[i] <= '9') i++;
+        if (start === i) error();
+        return parseInt(str.substring(start, i), 10);
+    }
+
+    function parse_parenthesized_column(): Column {
+        i++;
+        const col: Column = [];
+        skip_spaces();
+        while (i < str.length && str[i] !== ')' && str[i] !== ':') {
+            skip_spaces();
+            const sep = parse_sep();
+            skip_spaces();
+            const v = parse_number();
+            col.push([v, sep]);
+            skip_spaces();
+        }
+        skip_index();
+        skip_spaces();
+        if (i >= str.length || str[i] !== ')') error();
+        i++;
+        return col;
+    }
+
+    function parse_unparenthesized_column(): Column {
+        skip_spaces();
+        if (i >= str.length) error();
+        if (str[i] === ',') {
+            const sep = parse_sep();
+            skip_spaces();
+            const v = parse_number();
+            skip_index();
+            return [[v, sep]];
+        }
+        if (str[i] === '0') {
+            i++;
+            skip_index();
+            return [];
+        }
+        error();
+    }
+
+    const result: Mountain = [];
+    skip_spaces();
+    while (i < str.length) {
+        if (str[i] === '(') {
+            result.push(parse_parenthesized_column());
+        } else {
+            result.push(parse_unparenthesized_column());
+        }
+        skip_spaces();
+    }
     return result;
 }
 
@@ -588,6 +639,7 @@ export function n_MN(n: number): NotationDefinition<Mountain> {
             marked: {
                 plain: (m) => mountain_display_marked(m, 'label'),
                 html: (m) => mountain_display_marked(m, 'sub'),
+                from_display: from_display,
             },
             simple: {
                 plain: (m) => mountain_display(m, true),

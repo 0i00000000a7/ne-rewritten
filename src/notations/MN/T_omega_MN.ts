@@ -109,6 +109,14 @@ function mountain_from_display(s: string): Expr {
         return [v, sep];
     }
 
+    function skip_index(): void {
+        if (i < s.length && s[i] === ':') {
+            i++;
+            skip_spaces();
+            while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+        }
+    }
+
     function parse_column(): Column {
         skip_spaces();
         if (i >= s.length || s[i] !== '(') error();
@@ -116,11 +124,13 @@ function mountain_from_display(s: string): Expr {
 
         const col: Column = [];
         skip_spaces();
-        while (i < s.length && s[i] !== ')') {
+        while (i < s.length && s[i] !== ')' && s[i] !== ':') {
             col.push(parse_entry());
             skip_spaces();
         }
 
+        skip_index();
+        skip_spaces();
         if (i >= s.length) error();
         i++;
         return col;
@@ -548,6 +558,7 @@ export const T_omega_MN: NotationDefinition<Expr> = {
         marked: {
             plain: (m) => mountain_display_marked(m, 'label'),
             html: (m) => mountain_display_marked(m, 'sub'),
+            from_display: mountain_from_display,
         },
         simple: {
             plain: (m) => mountain_display(m, true),

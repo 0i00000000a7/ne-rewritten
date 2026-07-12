@@ -135,19 +135,24 @@ function from_display(str: string): Mountain {
     function parse_unparenthesized_column(): Column {
         skip_spaces();
         if (i >= str.length) error();
-        if (str[i] === ',') {
-            const sep = parse_sep();
-            skip_spaces();
-            const v = parse_number();
-            skip_index();
-            return [[v, sep]];
-        }
-        if (str[i] === '0') {
+        if (str[i] === '0' && (i + 1 >= str.length || str[i + 1] === ':' || str[i + 1] === ' ' || str[i + 1] === '(' || str[i + 1] === ',')) {
             i++;
             skip_index();
             return [];
         }
-        error();
+        const col: Column = [];
+        while (i < str.length && str[i] !== ' ' && str[i] !== '(' && str[i] !== ':') {
+            if (str[i] === ',') {
+                const sep = parse_sep();
+                skip_spaces();
+                const v = parse_number();
+                col.push([v, sep]);
+            } else {
+                error();
+            }
+        }
+        skip_index();
+        return col;
     }
 
     const result: Mountain = [];

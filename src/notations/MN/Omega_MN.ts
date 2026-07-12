@@ -128,21 +128,26 @@ function mountain_from_display(str: string): Expr {
     function parse_unparenthesized_column(): Column {
         skip_spaces();
         if (i >= str.length) error();
-        // Check if starts with comma (has explicit separator)
-        if (str[i] === ',') {
-            const sep = parse_sep();
-            skip_spaces();
-            const v = parse_number();
-            skip_index();
-            return [[v, sep]];
-        }
-        // Otherwise it must be '0' (empty column)
-        if (str[i] === '0') {
+        // Bare '0' means empty column
+        if (str[i] === '0' && (i + 1 >= str.length || str[i + 1] === ':' || str[i + 1] === ' ' || str[i + 1] === '(' || str[i + 1] === ',')) {
             i++;
             skip_index();
             return [];
         }
-        error();
+        // 与 simple 模式相同：无空格分隔的 entry 属于同一列
+        const col: Column = [];
+        while (i < str.length && str[i] !== ' ' && str[i] !== '(' && str[i] !== ':') {
+            if (str[i] === ',') {
+                const sep = parse_sep();
+                skip_spaces();
+                const v = parse_number();
+                col.push([v, sep]);
+            } else {
+                error();
+            }
+        }
+        skip_index();
+        return col;
     }
 
     const result: Expr = [];

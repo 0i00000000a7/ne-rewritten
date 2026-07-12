@@ -35,9 +35,9 @@ register_notation({
     // category_id: optional
     display: (a) => (a === Infinity ? 'Limit' : '(' + a.toReversed() + ')'), // plain display
 
-    // is limit ordinal
     is_limit: (a) => a === Infinity || (a.length > 0 && a[0] === 0),
-    compare: anti_lex_compare,
+    // is limit ordinal
+    compare: linear_array_compare,
     FS: linear_array_FS,
     init: () => [Infinity, []], // list of initial expressions
 });

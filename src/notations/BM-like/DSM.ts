@@ -1,4 +1,4 @@
-import { compare, display, from_display, INFINITY, is_infinity, is_limit } from '@/notations/BM-like/BM.ts';
+import { compare, display, from_display, INFINITY, is_infinity, is_limit, normalize } from '@/notations/BM-like/BM.ts';
 import { type NotationDefinition } from '@/notation-definition.ts';
 import { Y_FS_variants } from '@/notations/notation_utils.ts';
 
@@ -9,15 +9,9 @@ type Position = { r: number; c: number };
 
 // ============ Matrix Utilities ============
 
-function is_last_col_zero(matrix: Matrix): boolean {
-    if (matrix.length === 0) return true;
-    const lastCol = matrix[matrix.length - 1];
-    return lastCol.every((v) => v === 0);
-}
-
 function generate_limit_matrix(k: number): Matrix {
-    const matrix: Matrix = [[0]];
-    for (let i = 1; i < k; i++) {
+    const matrix: Matrix = [[]];
+    for (let i = 1; i <= k; i++) {
         const col: number[] = [];
         for (let j = i; j >= 1; j--) {
             col.push(j);
@@ -434,7 +428,7 @@ function expand_normal(matrix: Matrix, times: number): Matrix {
     const { badItem, parentsColMajor } = info;
     const fullExpandedMatrix = generate_expansion(parentsColMajor, badItem.r, badItem.c, times, false);
     fullExpandedMatrix.pop();
-    return fullExpandedMatrix;
+    return normalize(fullExpandedMatrix);
 }
 
 // ============ Definition ============

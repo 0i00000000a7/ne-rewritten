@@ -129,7 +129,14 @@ function mountain_from_display(str: string): Expr {
         skip_spaces();
         if (i >= str.length) error();
         // Bare '0' means empty column
-        if (str[i] === '0' && (i + 1 >= str.length || str[i + 1] === ':' || str[i + 1] === ' ' || str[i + 1] === '(' || str[i + 1] === ',')) {
+        if (
+            str[i] === '0' &&
+            (i + 1 >= str.length ||
+                str[i + 1] === ':' ||
+                str[i + 1] === ' ' ||
+                str[i + 1] === '(' ||
+                str[i + 1] === ',')
+        ) {
             i++;
             skip_index();
             return [];

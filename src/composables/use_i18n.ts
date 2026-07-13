@@ -79,7 +79,7 @@ const messages: Record<Language, Record<string, string>> = {
         'expand.error-no-from-display': '记号 "{{name}}" 不支持从字符串解析',
         'expand.error-fs': '基本列计算失败',
         'import.error': '遇到错误, 请查看控制台 (F12)。',
-        'credit.bashicu': '由 Bashicu Hyodora 定义; 展开器来自原 NE 项目.',
+        'credit.bashicu': '由 Bashicu Hyodura 定义; 展开器来自原 NE 项目.',
         'credit.tbm': '由社区定义.',
         'credit.yukito': '由 Yukito 定义; 展开器来自原 NE 项目, 最初由 Yukito 给出; 山脉图绘制由 Yukito 给出.',
         'credit.den':

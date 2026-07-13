@@ -135,7 +135,14 @@ function from_display(str: string): Mountain {
     function parse_unparenthesized_column(): Column {
         skip_spaces();
         if (i >= str.length) error();
-        if (str[i] === '0' && (i + 1 >= str.length || str[i + 1] === ':' || str[i + 1] === ' ' || str[i + 1] === '(' || str[i + 1] === ',')) {
+        if (
+            str[i] === '0' &&
+            (i + 1 >= str.length ||
+                str[i + 1] === ':' ||
+                str[i + 1] === ' ' ||
+                str[i + 1] === '(' ||
+                str[i + 1] === ',')
+        ) {
             i++;
             skip_index();
             return [];

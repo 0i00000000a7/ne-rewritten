@@ -334,11 +334,14 @@ function on_blur() {
                 <RenderLatex v-if="settings.display_mode === 'latex'" :latex="expr_display(node.expr)" />
                 <span v-else class="expr-display equiv" v-html="expr_display(node.expr)" />
             </template>
-            <template
-                v-if="!equiv_name || !(settings.equiv_hide_original[props.notation.id] ?? true)"
-            >
+            <template v-if="!equiv_name || !(settings.equiv_hide_original[props.notation.id] ?? true)">
                 <RenderLatex v-if="settings.display_mode === 'latex'" :latex="expr_display_original(node.expr)" />
-                <span v-else class="expr-display" :class="{ shifted: !!equiv_name }" v-html="expr_display_original(node.expr)" />
+                <span
+                    v-else
+                    class="expr-display"
+                    :class="{ shifted: !!equiv_name }"
+                    v-html="expr_display_original(node.expr)"
+                />
             </template>
             <div v-if="tooltip" class="tooltip" @mousedown.stop>
                 <RenderLatex v-if="settings.display_mode === 'latex'" :latex="expr_display(node.expr)" />

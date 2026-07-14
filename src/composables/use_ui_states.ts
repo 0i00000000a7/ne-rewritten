@@ -19,6 +19,7 @@ const showTips = ref(false);
 const showColorTheme = ref(false);
 const showReset = ref(false);
 const showUserDefined = ref(false);
+const showLatexAnalysis = ref(false);
 
 // registry 变更通知器
 const registry_notifier = new Notifier();
@@ -60,6 +61,7 @@ export function use_ui_states() {
         showColorTheme,
         showReset,
         showUserDefined,
+        showLatexAnalysis,
         registry_notifier,
     };
 }

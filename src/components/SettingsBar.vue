@@ -235,6 +235,7 @@ function on_find_keydown(e: KeyboardEvent) {
                     <input type="checkbox" :checked="settings.show_latex" @change="toggle_latex" />
                     {{ t('latex.show') }}
                 </label>
+                <button @mousedown="ui.showLatexAnalysis.value = true">{{ t('latex-analysis.title') }}</button>
             </div>
             <div v-if="!settings_collapsed && equiv_options.length > 0" class="toolbar-row">
                 <label>

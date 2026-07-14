@@ -150,10 +150,10 @@ export interface ParserOptions {
 }
 
 export const DEFAULT_OPTIONS: ParserOptions = {
-    psi_subscript: true,
-    subscript_bracket: false,
+    psi_subscript: false,
+    subscript_bracket: true,
     map_p: false,
-    map_w: false,
+    map_w: true,
     map_e: false,
     map_f: false,
     map_l: false,

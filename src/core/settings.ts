@@ -73,13 +73,13 @@ export const DEFAULT_SETTINGS: Settings = {
     user_scripts: [],
     expand: { FS_index: 1, notation_id: 'omega', notation_equiv: undefined, variant: 'FS_short' },
     latex_analysis: {
-        subscript_bracket: false,
+        subscript_bracket: true,
         map_p: false,
-        map_w: false,
+        map_w: true,
         map_e: false,
         map_f: false,
         map_l: false,
         map_W: false,
-        psi_subscript: true,
+        psi_subscript: false,
     },
 };

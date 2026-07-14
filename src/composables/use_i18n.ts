@@ -101,7 +101,7 @@ const messages: Record<Language, Record<string, string>> = {
         'diagram.show': '显示图表',
         'latex.show': '显示分析 LaTeX',
         'latex-analysis.title': '分析 LaTeX 设置',
-        'latex-analysis.subscript-bracket': '括号表示下标',
+        'latex-analysis.subscript-bracket': '方括号表示下标',
         'latex-analysis.map-p': 'p 解析为 ψ',
         'latex-analysis.map-w': 'w 解析为 ω',
         'latex-analysis.map-e': 'e 解析为 ε',

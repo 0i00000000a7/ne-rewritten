@@ -27,6 +27,8 @@ import { wMM } from '@/notations/BM-like/wMM.ts';
 import { CMS } from '@/notations/BM-like/CMS.ts';
 import { BLM } from '@/notations/BM-like/BLM.ts';
 import { DSM } from '@/notations/BM-like/DSM.ts';
+import { pps4, wpps4, ewpps4, spps4, tpps4 } from '@/notations/PPS/PPS.ts';
+import { category_pps } from '@/notations/PPS/categories.ts';
 import {
     get_generator_state,
     init_generator,
@@ -209,6 +211,12 @@ register_notation(aSAN);
 register_notation(aSAN2);
 register_notation(aSAN3);
 register_notation(aSAN_tilde3plus);
+register_category(category_pps);
+register_notation(pps4);
+register_notation(wpps4);
+register_notation(ewpps4);
+register_notation(spps4);
+register_notation(tpps4);
 
 window.notations ??= {};
 for (let notation of list_notations()) {

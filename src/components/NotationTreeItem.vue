@@ -329,6 +329,7 @@ function on_blur() {
                     v-model="analysis0"
                     @keydown="on_keydown"
                     @mousedown.stop
+                    @click.stop
                     @focus="on_focus"
                     @blur="on_blur"
                 />

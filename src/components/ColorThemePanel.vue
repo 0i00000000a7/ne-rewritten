@@ -3,7 +3,7 @@ import { inject } from 'vue';
 import { I18N_KEY } from '@/composables/use_i18n.ts';
 import { SETTINGS_KEY } from '@/composables/use_settings.ts';
 import { use_ui_states } from '@/composables/use_ui_states.ts';
-import { use_color_theme, themes } from '@/composables/use_color_theme.ts';
+import { themes, use_color_theme } from '@/composables/use_color_theme.ts';
 import ModalDialog from './ModalDialog.vue';
 
 const t = inject(I18N_KEY)!;
@@ -40,6 +40,10 @@ function select(id: string) {
                         <button class="preview-btn preview-btn--danger">{{ t('toolbar.reset') }}</button>
                         <button class="preview-btn">{{ t('toolbar.save') }}</button>
                         <button class="preview-btn preview-btn--tips">{{ t('toolbar.tips') }}</button>
+                    </div>
+                    <div class="preview-notations">
+                        <div class="preview-equiv">{{ t('equiv.default') }}</div>
+                        <div class="preview-equiv">0Y</div>
                     </div>
                     <div class="preview-text">1,4,6,4</div>
                     <div class="preview-text preview-text--orig">(0)(1,1,1)(2,1)(1,1,1)</div>
@@ -126,6 +130,17 @@ function select(id: string) {
 .preview-notation--current {
     background: var(--color-primary-active);
     color: var(--color-bg);
+}
+
+.preview-equiv {
+    display: inline-block;
+    padding: 0 6px 2px;
+    border: 2px solid var(--color-accent);
+    border-radius: 10px;
+    background: var(--color-accent-bg);
+    color: var(--color-text);
+    font-size: 13px;
+    width: fit-content;
 }
 
 .preview-text {

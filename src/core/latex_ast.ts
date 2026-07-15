@@ -98,6 +98,18 @@ export class Tokenizer {
             return { s: this.s.substring(start, this.pos), leading_ws };
         }
 
+        // LaTeX command: \ followed by letters → single token
+        if (ch === '\\') {
+            this.pos++;
+            if (this.pos < this.s.length && /[a-zA-Z]/.test(this.s[this.pos])) {
+                const start = this.pos;
+                while (this.pos < this.s.length && /[a-zA-Z]/.test(this.s[this.pos])) this.pos++;
+                return { s: '\\' + this.s.substring(start, this.pos), leading_ws };
+            }
+            // lone backslash (not followed by a letter)
+            return { s: '\\', leading_ws };
+        }
+
         this.pos++;
         return { s: ch, leading_ws };
     }
@@ -128,10 +140,24 @@ export class Tokenizer {
 
 export interface ParserOptions {
     psi_subscript: boolean;
+    subscript_bracket: boolean;
+    map_p: boolean;
+    map_w: boolean;
+    map_e: boolean;
+    map_f: boolean;
+    map_l: boolean;
+    map_W: boolean;
 }
 
 export const DEFAULT_OPTIONS: ParserOptions = {
-    psi_subscript: true,
+    psi_subscript: false,
+    subscript_bracket: true,
+    map_p: false,
+    map_w: true,
+    map_e: false,
+    map_f: false,
+    map_l: false,
+    map_W: false,
 };
 
 /**
@@ -162,6 +188,17 @@ export class Parser {
     constructor(tk: Tokenizer, opts?: Partial<ParserOptions>) {
         this.tk = tk;
         this.opts = { ...DEFAULT_OPTIONS, ...opts };
+    }
+
+    /** Apply substitution based on options. */
+    private substitute(raw: string): string {
+        if (raw === 'p' && this.opts.map_p) return 'ψ';
+        if (raw === 'w' && this.opts.map_w) return 'ω';
+        if (raw === 'W' && this.opts.map_W) return 'Ω';
+        if (raw === 'e' && this.opts.map_e) return 'ε';
+        if (raw === 'f' && this.opts.map_f) return 'φ';
+        if (raw === 'L' && this.opts.map_l) return 'λ';
+        return raw;
     }
 
     // ---- public entry ----
@@ -218,7 +255,7 @@ export class Parser {
                     sub: subRes,
                 } satisfies SubSupNode;
                 psiFlag = false; // operator reset
-            } else if (nxt.s === '[') {
+            } else if (nxt.s === '[' && this.opts.subscript_bracket) {
                 this.tk.advance(); // consume [
                 const subRes = this.parse_bra_content();
                 // consume matching ]
@@ -276,9 +313,9 @@ export class Parser {
         const t = this.tk.peek();
         if (!t) return null;
 
-        // apply substitution
+        // apply substitution (but not for LaTeX commands like \psi)
         const raw = t.s;
-        const substituted = SUBSTITUTIONS[raw] ?? raw;
+        const substituted = raw.startsWith('\\') ? raw : this.substitute(raw);
 
         // consume the token
         this.tk.advance();
@@ -356,7 +393,7 @@ export class Parser {
         this.tk.advance();
         this.tk.commit();
 
-        const val = SUBSTITUTIONS[nxt.s] ?? nxt.s;
+        const val = this.substitute(nxt.s);
         let node: LatexNode = { kind: 'token', value: val };
 
         // recursive ψ rule
@@ -375,7 +412,7 @@ export class Parser {
                 this.tk.advance();
                 const sub2 = this.parse_psi_sub_content();
                 node = { kind: 'subsup', base: node, sub: sub2 } satisfies SubSupNode;
-            } else if (n2.s === '[') {
+            } else if (n2.s === '[' && this.opts.subscript_bracket) {
                 this.tk.advance();
                 const sub2 = this.parse_psi_sub_content();
                 node = { kind: 'subsup', base: node, sub: sub2 } satisfies SubSupNode;

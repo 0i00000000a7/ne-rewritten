@@ -28,16 +28,19 @@ const focused = ref(false);
 const { show: show_diagram, hide: hide_diagram, dispatch_action: dispatch_diagram_action } = use_diagram();
 const { show: show_latex_viewer, hide: hide_latex_viewer } = use_latex();
 
-if (!props.node.extraData) props.node.extraData = {};
-const ed = props.node.extraData as TreeNodeExtra;
-if (!Array.isArray(ed.analysis)) ed.analysis = [];
+const ed = computed((): TreeNodeExtra => {
+    if (!props.node.extraData) props.node.extraData = {};
+    const d = props.node.extraData as TreeNodeExtra;
+    if (!Array.isArray(d.analysis)) d.analysis = [];
+    return d;
+});
 
 const saved_analysis = ref<string | undefined>(undefined);
 
 const analysis0 = computed({
-    get: () => ed.analysis![0] ?? '',
+    get: () => ed.value.analysis?.[0] ?? '',
     set: (v: string) => {
-        ed.analysis![0] = v;
+        ed.value.analysis![0] = v;
     },
 });
 
@@ -88,7 +91,7 @@ onMounted(() => {
         ro.observe(span);
     }
     onUnmounted(() => ro?.disconnect());
-    if (ed.focus_on_mounted) {
+    if (ed.value.focus_on_mounted) {
         const el = input_ref.value;
         if (el) {
             el.focus({ preventScroll: true });
@@ -96,7 +99,7 @@ onMounted(() => {
             const top = window.scrollY + rect.top - 60;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-        ed.focus_on_mounted = false;
+        ed.value.focus_on_mounted = false;
     }
 });
 
@@ -192,7 +195,7 @@ function on_keydown(e: KeyboardEvent) {
     } else if (e.key.toLowerCase() === 'e' && e.ctrlKey) {
         e.preventDefault();
         const ed_expand = use_expand_dialog();
-        ed_expand.open(ed.analysis![0] ?? '', settings.expand);
+        ed_expand.open(ed.value.analysis![0] ?? '', settings.expand);
     } else if (e.key.toLowerCase() === 'd' && e.ctrlKey) {
         e.preventDefault();
         console.log('DEBUG expr:', props.node.expr);
@@ -200,17 +203,17 @@ function on_keydown(e: KeyboardEvent) {
         (window as any).notation = props.notation;
     } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
         e.preventDefault();
-        ed.hide_child = !ed.hide_child;
+        ed.value.hide_child = !ed.value.hide_child;
     } else if (e.key.toLowerCase() === 'z' && e.ctrlKey && !e.shiftKey && !e.altKey) {
         if (saved_analysis.value !== undefined) {
             e.preventDefault();
-            ed.analysis![0] = saved_analysis.value;
+            ed.value.analysis![0] = saved_analysis.value;
             saved_analysis.value = undefined;
         }
     } else if (e.key === 'Delete' && settings.use_delete_to_clear) {
         e.preventDefault();
-        if (ed.analysis?.[0] !== undefined) saved_analysis.value = ed.analysis[0];
-        ed.analysis![0] = undefined as unknown as string;
+        if (ed.value.analysis?.[0] !== undefined) saved_analysis.value = ed.value.analysis[0];
+        ed.value.analysis![0] = undefined as unknown as string;
     }
 }
 
@@ -326,6 +329,7 @@ function on_blur() {
                     v-model="analysis0"
                     @keydown="on_keydown"
                     @mousedown.stop
+                    @click.stop
                     @focus="on_focus"
                     @blur="on_blur"
                 />

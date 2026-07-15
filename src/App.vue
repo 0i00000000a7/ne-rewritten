@@ -12,6 +12,7 @@ import HotkeyDialog from '@/components/HotkeyDialog.vue';
 import TipsDialog from '@/components/TipsDialog.vue';
 import ColorThemePanel from '@/components/ColorThemePanel.vue';
 import ResetPanel from '@/components/ResetPanel.vue';
+import AnalysisLatexSettingsPanel from '@/components/AnalysisLatexSettingsPanel.vue';
 import UserDefinedNotationPanel from '@/components/UserDefinedNotationPanel.vue';
 import { create_t, I18N_KEY } from '@/composables/use_i18n.ts';
 import ExpandDialog from '@/components/ExpandDialog.vue';
@@ -179,6 +180,7 @@ function debug_compare_order(notation_id?: string) {
         <ColorThemePanel />
         <ResetPanel />
         <UserDefinedNotationPanel />
+        <AnalysisLatexSettingsPanel />
         <MultiSelectBar />
         <ConfigBar />
     </div>
@@ -197,6 +199,9 @@ function debug_compare_order(notation_id?: string) {
     --color-category-hover: #fd9;
     --color-category-bg: #feb;
     --color-accent: #06c;
+    --color-accent-hover: #08e;
+    --color-accent-active: #048;
+    --color-accent-bg: #cdf;
     --color-danger: #c00;
     --color-success: #080;
     --color-border: #ccc;

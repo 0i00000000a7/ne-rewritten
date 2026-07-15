@@ -8,6 +8,17 @@ export interface ExpandSettings {
     variant: Variant;
 }
 
+export interface LatexAnalysisSettings {
+    subscript_bracket: boolean;
+    map_p: boolean;
+    map_w: boolean;
+    map_e: boolean;
+    map_f: boolean;
+    map_l: boolean;
+    map_W: boolean;
+    psi_subscript: boolean;
+}
+
 export interface UserScript {
     file_name: string;
     code: string;
@@ -36,6 +47,7 @@ export interface Settings {
     generator_state: Record<string, number>;
     user_scripts: UserScript[];
     expand: ExpandSettings;
+    latex_analysis: LatexAnalysisSettings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -60,4 +72,14 @@ export const DEFAULT_SETTINGS: Settings = {
     generator_state: {},
     user_scripts: [],
     expand: { FS_index: 1, notation_id: 'omega', notation_equiv: undefined, variant: 'FS_short' },
+    latex_analysis: {
+        subscript_bracket: true,
+        map_p: false,
+        map_w: true,
+        map_e: false,
+        map_f: false,
+        map_l: false,
+        map_W: false,
+        psi_subscript: false,
+    },
 };

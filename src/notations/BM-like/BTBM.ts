@@ -6,12 +6,8 @@ import {
     lex_compare_by,
     number_compare,
     object_lex_compare_by,
-    tuple_lex_compare_by,
 } from '@/utils.ts';
-import { r } from '@/notations/TON/ton_helpers.ts';
 import { NotationDefinition } from '@/notation-definition.ts';
-
-type CompactExpr = [number, CompactExpr][][];
 
 type Expr = Column[];
 type Column = Entry[];
@@ -21,21 +17,14 @@ type ExprData<T extends object> = ColumnData<T>[];
 type ColumnData<T extends object> = EntryData<T>[];
 type EntryData<T extends object> = T & { height: ExprData<T> };
 
-const INFINITY_compact: CompactExpr = Symbol('infinity') as any;
-const INFINITY: Expr = INFINITY_compact as any;
+type Height = ExprData<{ value: number; mark: boolean }>;
+type Vertical = Height[];
 
-function is_infinity(e: Expr | CompactExpr): boolean {
+const INFINITY: Expr = Symbol('infinity') as any;
+const INFINITY_height: Height = INFINITY as any;
+
+function is_infinity(e: Expr | Height): boolean {
     return e === INFINITY;
-}
-
-function compactify(expr: Expr): CompactExpr {
-    if (expr === INFINITY) return INFINITY_compact;
-    return expr.map((col) => col.map((entry) => [entry.value, compactify(entry.height)]));
-}
-
-function decompactify(compact: CompactExpr): Expr {
-    if (compact === INFINITY_compact) return INFINITY;
-    return compact.map((col) => col.map(([value, height]) => ({ value, height: decompactify(height) })));
 }
 
 function infinity_FS(index: number): Expr {
@@ -45,26 +34,6 @@ function infinity_FS(index: number): Expr {
         col = [{ value: i - 1, height: [col] }];
     }
     return [[], col];
-}
-
-type Height = ExprData<{ value: number; mark: boolean }>;
-type Vertical = Height[];
-
-function height_base_change(h: Height, r: number, r1: number): Height {
-    return h.map((col) =>
-        col.map((entry) => {
-            let height = height_base_change(entry.height, r, r1);
-            let mark: boolean, value: number;
-            if (entry.mark) {
-                [mark, value] = [true, entry.value + (r1 - r)];
-            } else if (entry.value >= r) {
-                [mark, value] = [true, entry.value - r];
-            } else {
-                [mark, value] = [false, entry.value];
-            }
-            return { mark, value, height };
-        }),
-    );
 }
 
 function to_height(e: Expr, r: number): Height {
@@ -96,7 +65,30 @@ function to_height(e: Expr, r: number): Height {
     return result;
 }
 
+function from_height(h: Height, r: number): Expr {
+    const result: Expr = [];
+
+    for (let i = 0; i < h.length; i++) {
+        const col = h[i];
+
+        const result_col: Column = [];
+
+        for (const entry of col) {
+            const { mark, value } = entry;
+            result_col.push({
+                value: value + (mark ? r : 0),
+                height: from_height(entry.height, r),
+            });
+        }
+
+        result.push(result_col);
+    }
+
+    return result;
+}
+
 function height_compare(a: Height, b: Height): number {
+    if (is_infinity(a) || is_infinity(b)) return boolean_compare(is_infinity(a), is_infinity(b));
     return lex_compare(a, b, lex_compare_by(height_entry_comparator));
 }
 
@@ -105,31 +97,11 @@ const height_entry_comparator = object_lex_compare_by(
     ['mark', 'value', 'height'],
 );
 
-function vertical_compare(a: Vertical, b: Vertical): number {
-    return lex_compare(a, b, height_compare);
-}
-
-function vertical_increase(vert: Vertical, h_diff: Height): Vertical {
-    const result = [...vert];
-    while (result.length > 0 && height_compare(result[result.length - 1], h_diff) < 0) {
-        result.pop();
-    }
-    result.push(h_diff);
-    return result;
-}
-
-function vertical_sub(vert: Vertical, base: Vertical): Vertical {
-    let i = 0;
-    while (i < base.length && i < vert.length && height_compare(vert[i], base[i]) === 0) i++;
-    return vert.slice(i);
-}
-
 function has_next_layer<T extends object>(expr: ExprData<T>): boolean {
     const right = expr.length - 1;
     if (right === -1) return false;
     const top = expr[right].length - 1;
-    if (top === -1) return false;
-    return true;
+    return top !== -1;
 }
 
 function next_layer<T extends object>(expr: ExprData<T>): ExprData<T> {
@@ -313,14 +285,143 @@ function FS(expr: Expr, index: number): Expr {
 function display(expr: Expr, html: boolean): string {
     if (is_infinity(expr)) return 'Limit';
 
-    return expr.map((col) => '(' + col.map((entry) => display_entry(entry, html)).join(',') + ')').join('');
+    return expr.map(bind2(display_column, html)).join('');
+}
+
+function display_column(col: Column, html: boolean) {
+    if (col.length === 0) return '(0)';
+    return '(' + col.map(bind2(display_entry, html)).join(',') + ')';
+}
+
+type DMT = 'plain' | 'html' | 'latex';
+
+function display_marked(expr: Expr, type: DMT, start_index: number = 1): string {
+    if (is_infinity(expr)) return 'Limit';
+    let idx = start_index;
+    const parts: string[] = [];
+    for (const col of expr) {
+        parts.push(display_column_marked(col, type, idx));
+        idx++;
+    }
+    return parts.join('');
+}
+
+function display_column_marked(col: Column, type: DMT, index: number): string {
+    if (col.length === 0) {
+        if (type === 'plain') return '(:' + index + ')';
+        if (type === 'html') return "(0)<sub><span style='color:#888'>" + index + '</span></sub>';
+        return '(0)_{\\color{gray}' + index + '}';
+    }
+    const content = col.map((e) => display_entry_marked(e, type, index)).join(',');
+    if (type === 'plain') return '(' + content + ':' + index + ')';
+    if (type === 'html') return '(' + content + ")<sub><span style='color:#888'>" + index + '</span></sub>';
+    return '(' + content + ')_{\\color{gray}' + index + '}';
+}
+
+function display_entry_marked(entry: Entry, type: DMT, col_index: number): string {
+    const v_display = '' + (entry.value + 1);
+    if (entry.height.length === 0) return v_display;
+    const h_display = display_marked(entry.height, type, col_index + 1);
+    if (type === 'html') return v_display + '<sup>' + h_display + '</sup>';
+    if (type === 'latex') return v_display + '^{' + h_display + '}';
+    return v_display + '^' + h_display;
 }
 
 function display_entry(entry: Entry, html: boolean): string {
     const v_display = '' + (entry.value + 1);
     if (entry.height.length === 0) return v_display;
     const h_display = display(entry.height, html);
-    return html ? v_display + '<sup>' + v_display + '</sup>' : v_display + '^' + h_display;
+    return html ? v_display + '<sup>' + h_display + '</sup>' : v_display + '^' + h_display;
+}
+
+function from_display(s: string): Expr {
+    let i = 0;
+
+    function error(): never {
+        throw new Error('Illegal input string: ' + s);
+    }
+
+    function skip_spaces(): void {
+        while (i < s.length && s[i] === ' ') i++;
+    }
+
+    function skip_index(): void {
+        if (i < s.length && s[i] === ':') {
+            i++;
+            skip_spaces();
+            while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+        }
+    }
+
+    function parse_number(): number {
+        skip_spaces();
+        const start = i;
+        while (i < s.length && s[i] >= '0' && s[i] <= '9') i++;
+        if (start === i) error();
+        return parseInt(s.substring(start, i), 10);
+    }
+
+    function parse_expr(): Expr {
+        const result: Expr = [];
+        skip_spaces();
+        while (i < s.length && s[i] === '(') {
+            result.push(parse_column());
+            skip_spaces();
+        }
+        return result;
+    }
+
+    function parse_column(): Column {
+        skip_spaces();
+        if (i >= s.length || s[i] !== '(') error();
+        i++;
+
+        const entries: Entry[] = [];
+        skip_spaces();
+        if (i < s.length && s[i] !== ')' && s[i] !== ':') {
+            entries.push(parse_entry());
+            skip_spaces();
+            while (i < s.length && s[i] === ',') {
+                i++;
+                skip_spaces();
+                if (i < s.length && s[i] === ')') break;
+                entries.push(parse_entry());
+                skip_spaces();
+            }
+        }
+
+        skip_spaces();
+        skip_index();
+        skip_spaces();
+        if (i >= s.length || s[i] !== ')') error();
+        i++;
+        // 删去列尾的 0 项（显示值 0 = 内部值 -1）
+        while (entries.length > 0 && entries[entries.length - 1].value === -1) entries.pop();
+        return entries;
+    }
+
+    function parse_entry(): Entry {
+        const v = parse_number() - 1; // display 为 1-based，内部为 0-based
+        skip_spaces();
+        if (i < s.length && s[i] === '^') {
+            i++;
+            return { value: v, height: parse_expr() };
+        }
+        return { value: v, height: [] };
+    }
+
+    skip_spaces();
+    if (i + 5 <= s.length && s.substring(i, i + 5) === 'Limit') {
+        i += 5;
+        skip_spaces();
+        if (i !== s.length) error();
+        return INFINITY;
+    }
+
+    const result = parse_expr();
+    skip_spaces();
+    if (i !== s.length) error();
+    return result;
 }
 
 function compare(a: Expr, b: Expr): number {
@@ -335,6 +436,163 @@ const entry_comparator: Comparator<Entry> = object_lex_compare_by(
     ['value', 'height'],
 );
 
+type LayerColumn = { value: number; parent: number; height: Height }[];
+
+function vertical_increase(vert: Vertical, h_diff: Height): Vertical {
+    const result = [...vert];
+    while (result.length > 0 && height_compare(result[result.length - 1], h_diff) < 0) {
+        result.pop();
+    }
+    result.push(h_diff);
+    return result;
+}
+
+function convert_to_layer(e: Expr, parsed_stack: LayerColumn[] = []): Expr {
+    if (is_infinity(e)) return e;
+
+    const lS = parsed_stack.length;
+    const result: Expr = [];
+
+    for (let i = 0; i < e.length; i++) {
+        const iS = parsed_stack.length;
+
+        const col = e[i];
+        const parsed_col: LayerColumn = [];
+
+        let current_vertical: Vertical = [];
+
+        for (let j = 0; j < col.length; j++) {
+            const entry = col[j];
+            const parent = entry.value;
+            const height = to_height(entry.height, iS);
+
+            let kp = 0,
+                ki = 0;
+            while (kp !== parsed_stack[parent].length && ki !== current_vertical.length) {
+                const cmp = height_compare(parsed_stack[parent][kp].height, current_vertical[ki]);
+                if (cmp <= 0) kp++;
+                if (cmp >= 0) ki++;
+            }
+            if (kp === parsed_stack[parent].length) {
+                parsed_col.push({ value: 0, parent, height });
+            } else {
+                while (kp <= parsed_stack[parent].length) {
+                    if (kp === parsed_stack[parent].length) {
+                        parsed_col.push({ value: 0, parent, height });
+                        break;
+                    }
+                    const cmp = height_compare(parsed_stack[parent][kp].height, height);
+                    if (cmp < 0) {
+                        parsed_col.push({
+                            value: parsed_stack[parent][kp].value + 1,
+                            parent,
+                            height: parsed_stack[parent][kp].height,
+                        });
+                    } else {
+                        parsed_col.push({ value: parsed_stack[parent][kp].value + 1, parent, height });
+                        break;
+                    }
+                    kp++;
+                }
+            }
+            current_vertical = vertical_increase(current_vertical, height);
+        }
+        parsed_stack.push(parsed_col);
+
+        const result_col: Column = [];
+        for (let parsed_entry of parsed_col) {
+            const height_expr = from_height(parsed_entry.height, iS);
+            result_col.push({
+                value: parsed_entry.value,
+                height: convert_to_layer(height_expr, parsed_stack),
+            });
+        }
+
+        result.push(result_col);
+    }
+
+    parsed_stack.splice(lS);
+    return result;
+}
+
+// computes parent of lower, and value of upper
+function parent_info(
+    parsed: LayerColumn,
+    vertical: Vertical,
+): {
+    lower_parent: number | undefined;
+    higher_value: number;
+} {
+    let ip = 0,
+        iv = 0;
+    let lower_parent: number | undefined = undefined;
+    while (ip !== parsed.length && iv !== vertical.length) {
+        const cmp = height_compare(parsed[ip].height, vertical[iv]);
+        if (cmp >= 0) {
+            lower_parent = parsed[ip].parent;
+            iv++;
+        }
+        if (cmp <= 0) ip++;
+    }
+    return { lower_parent, higher_value: parsed[ip]?.value ?? -1 };
+}
+
+function convert_from_layer(e: Expr, parsed_stack: LayerColumn[] = []): Expr {
+    if (is_infinity(e)) return e;
+
+    const lS = parsed_stack.length;
+    const result: Expr = [];
+
+    for (let i = 0; i < e.length; i++) {
+        const iS = parsed_stack.length;
+
+        const col = e[i];
+        const parsed_col: LayerColumn = [];
+        parsed_stack.push(parsed_col);
+
+        const result_col: Column = [];
+        let current_vertical: Vertical = [];
+
+        for (let j = 0; j < col.length; j++) {
+            const entry = col[j];
+
+            let parent = j === 0 ? iS - 1 : parsed_col[j - 1].parent;
+            while (parent >= 0) {
+                let { lower_parent, higher_value } = parent_info(parsed_stack[parent], current_vertical);
+                if (higher_value < entry.value) break;
+                parent = lower_parent ?? parent - 1;
+            }
+
+            parsed_col.push({
+                value: entry.value,
+                parent,
+                height: INFINITY_height,
+            });
+
+            const height_expr = convert_from_layer(entry.height, parsed_stack);
+            const height = to_height(height_expr, iS);
+            parsed_col[j].height = height;
+
+            while (result_col.length > 0) {
+                const top = result_col[result_col.length - 1];
+                if (top.value === parent && compare(top.height, height_expr) < 0) {
+                    result_col.pop();
+                } else {
+                    break;
+                }
+            }
+
+            result_col.push({ value: parent, height: height_expr });
+            current_vertical = vertical_increase(current_vertical, height);
+        }
+
+        result.push(result_col);
+    }
+
+    parsed_stack.splice(lS);
+    return result;
+}
+
 export const BTBM: NotationDefinition<Expr> = {
     id: 'btbm',
     name: 'Branching Transfinite BMS',
@@ -343,6 +601,23 @@ export const BTBM: NotationDefinition<Expr> = {
     display: {
         plain: bind2(display, false),
         html: bind2(display, true),
+        from_display,
+        name_id: 'display.index',
+    },
+    display_equiv: {
+        layer: {
+            plain: (e) => display(convert_to_layer(e), false),
+            html: (e) => display(convert_to_layer(e), true),
+            from_display: (str) => convert_from_layer(from_display(str)),
+            name_id: 'display.layer',
+        },
+        marked: {
+            plain: (e) => display_marked(e, 'plain'),
+            html: (e) => display_marked(e, 'html'),
+            latex: (e) => display_marked(e, 'latex'),
+            from_display,
+            name_id: 'display.index-marked',
+        },
     },
     is_limit,
     compare,
